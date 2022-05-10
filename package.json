@@ -1,0 +1,11 @@
+{
+  "name": "com.anatawa12.custom-localization-for-editor-extension",
+  "version": "0.1.0-SNAPSHOT",
+  "displayName": "CustomLocalization4EditorExtension",
+  "author": {
+    "name": "anatawa12",
+    "url": "https://anatawa12.com/"
+  },
+  "description": "The experimental library for Unity extensions which want to have custom locale for translation instead of unity's locale.",
+  "type": "library"
+}
