@@ -14,7 +14,6 @@ namespace CustomLocalization4EditorExtension
     public class Localization
     {
         [NotNull] private readonly string _inputAssetPath;
-        [CanBeNull] private readonly string _keyLocale;
         [NotNull] private readonly string _currentLocale;
         [NotNull] private readonly string _defaultLocale;
         // use Dictionary<string, LocalizationAsset>?
@@ -30,17 +29,13 @@ namespace CustomLocalization4EditorExtension
         /// The asset path or GUID of <code cref="LocalizationAsset">LocalizationAsset</code> or
         /// the asset path to directory contains <code cref="LocalizationAsset">LocalizationAsset</code>s.
         /// </param>
-        /// <param name="keyLocale">The locale id of locale of localization key. This should be english.</param>
         /// <param name="defaultLocale">The fallback locale of localization.</param>
         /// <exception cref="ArgumentException">Both keyLocale and defaultLocale are null</exception>
         public Localization(
-            [NotNull] string localeAssetPath, 
-            [CanBeNull] string keyLocale = "en",
-            [CanBeNull] string defaultLocale = null) {
+            [NotNull] string localeAssetPath,
+            [NotNull] string defaultLocale) {
             _inputAssetPath = localeAssetPath;
-            _keyLocale = keyLocale;
-            _defaultLocale = defaultLocale ?? keyLocale
-                ?? throw new ArgumentException("both defaultLocale and keyLocale are null");
+            _defaultLocale = defaultLocale;
             _currentLocale = _defaultLocale;
         }
 
@@ -103,8 +98,7 @@ namespace CustomLocalization4EditorExtension
             if (_locales != null)
             {
                 // TODO: check locale duplication
-                if (_currentLocale != _keyLocale)
-                    _currentLocaleAsset = _locales.FirstOrDefault(asset => asset.localeIsoCode == _currentLocale); 
+                _currentLocaleAsset = _locales.FirstOrDefault(asset => asset.localeIsoCode == _currentLocale); 
                 _defaultLocaleAsset = _locales.FirstOrDefault(asset => asset.localeIsoCode == _defaultLocale);
             }
             _initialized = true;
@@ -122,9 +116,6 @@ namespace CustomLocalization4EditorExtension
         {
             if (!_initialized)
                 Setup();
-
-            if (_currentLocale == _keyLocale)
-                return key;
 
             var localized = key;
             if (_currentLocaleAsset != null)
