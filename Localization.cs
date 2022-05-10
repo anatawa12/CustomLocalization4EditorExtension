@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
@@ -16,8 +17,7 @@ namespace CustomLocalization4EditorExtension
         [NotNull] private readonly string _inputAssetPath;
         [NotNull] private readonly string _currentLocale;
         [NotNull] private readonly string _defaultLocale;
-        // use Dictionary<string, LocalizationAsset>?
-        [CanBeNull] private LocalizationAsset[] _locales;
+        [CanBeNull] private Dictionary<string, LocalizationAsset> _locales;
         [CanBeNull] private LocalizationAsset _currentLocaleAsset;
         [CanBeNull] private LocalizationAsset _defaultLocaleAsset;
         private bool _initialized;
@@ -57,11 +57,15 @@ namespace CustomLocalization4EditorExtension
                         .Select(fileName => pathOfDirectory + fileName)
                         .Select(AssetDatabase.LoadAssetAtPath<Object>)
                         .OfType<LocalizationAsset>()
-                        .ToArray();
+                        .ToDictionary(asset => asset.localeIsoCode, asset => asset);
                 }
                 catch (IOException e)
                 {
                     Debug.LogError(e);
+                }
+                catch (AggregateException e)
+                {
+                    Debug.LogError($"locale duplicated: {e}");
                 }
             }
 
@@ -97,9 +101,8 @@ namespace CustomLocalization4EditorExtension
             // then, find current locale
             if (_locales != null)
             {
-                // TODO: check locale duplication
-                _currentLocaleAsset = _locales.FirstOrDefault(asset => asset.localeIsoCode == _currentLocale); 
-                _defaultLocaleAsset = _locales.FirstOrDefault(asset => asset.localeIsoCode == _defaultLocale);
+                _locales.TryGetValue(_currentLocale, out _currentLocaleAsset); 
+                _locales.TryGetValue(_defaultLocale, out _defaultLocaleAsset);
             }
             _initialized = true;
         }
