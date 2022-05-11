@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using JetBrains.Annotations;
@@ -8,17 +9,17 @@ using UnityEngine;
 
 namespace CustomLocalization4EditorExtension
 {
-    // TODO: add api to show dropdown menu
-    // this class expects ISO-639-1/2 two/three letter language code and
-    // optional ISO 3166-1 alpha-2 country codes. e.g. 'en', 'en-us', 'ja-jp'.
     public class Localization
     {
         [NotNull] private readonly string _inputAssetPath;
-        [NotNull] private readonly string _currentLocale;
+        [NotNull] private string _currentLocale;
         [NotNull] private readonly string _defaultLocale;
         [CanBeNull] private Dictionary<string, LocalizationAsset> _locales;
+        [CanBeNull] private string[] _localeList;
+        [CanBeNull] private string[] _localeNameList;
         [CanBeNull] private LocalizationAsset _currentLocaleAsset;
         [CanBeNull] private LocalizationAsset _defaultLocaleAsset;
+        private int _localeIndex;
         private bool _initialized;
 
         /// <summary>
@@ -46,8 +47,10 @@ namespace CustomLocalization4EditorExtension
         /// </summary>
         public void Setup()
         {
+            _initialized = true;
             // first, list-up locales
             _locales = null;
+            _localeList = null;
             void LoadDirectory(string pathOfDirectory)
             {
                 try
@@ -56,6 +59,15 @@ namespace CustomLocalization4EditorExtension
                         .Select(AssetDatabase.LoadAssetAtPath<LocalizationAsset>)
                         .Where(asset => asset != null)
                         .ToDictionary(asset => asset.localeIsoCode, asset => asset);
+                    if (_locales.Count == 0)
+                    {
+                        Debug.LogError($"no locales found at {pathOfDirectory}");
+                        return;
+                    }
+
+                    _localeList = _locales.Keys.ToArray();
+                    Array.Sort(_localeList);
+                    SetLocale(_currentLocale);
                 }
                 catch (IOException e)
                 {
@@ -104,7 +116,44 @@ namespace CustomLocalization4EditorExtension
                 if (_defaultLocaleAsset == null)
                     Debug.LogError($"locale asset for default locale({_defaultLocale}) not found.");
             }
-            _initialized = true;
+        }
+
+        private void SetLocale(string locale)
+        {
+            if (_localeList == null)
+                throw new InvalidOperationException("_localeList is null but SetLocale was called");
+            DoSetLocale(locale);
+            System.Diagnostics.Debug.Assert(_localeList != null, nameof(_localeList) + " != null");
+            System.Diagnostics.Debug.Assert(_locales != null, nameof(_locales) + " != null");
+            _currentLocaleAsset = _locales[_currentLocale];
+            _localeNameList = _localeList
+                .Select(id => TryTr($"locale:{id}") ?? DefaultLocaleName(id))
+                .ToArray();
+        }
+
+        private void DoSetLocale(string locale)
+        {
+            System.Diagnostics.Debug.Assert(_localeList != null, nameof(_localeList) + " != null");
+            _localeIndex = Array.IndexOf(_localeList, locale);
+            if (_localeIndex == -1)
+            {
+                Debug.LogWarning($"locale not found: {locale}");
+                DoSetLocale(locale == _defaultLocale ? _localeList[0] : _defaultLocale);
+                return;
+            }
+            _currentLocale = locale;
+        }
+
+        private static Dictionary<string, string> LocaleName = new Dictionary<string, string>();
+        private static string DefaultLocaleName(string code)
+        {
+            if (!LocaleName.TryGetValue(code, out var name))
+            {
+                name = new CultureInfo(code).EnglishName;
+                LocaleName[code] = name;
+            }
+
+            return name;
         }
 
         /// <summary>
@@ -143,6 +192,22 @@ namespace CustomLocalization4EditorExtension
             }
 
             return null;
+        }
+
+        public void DrawLanguagePicker()
+        {
+            if (_localeNameList == null)
+            {
+                EditorGUILayout.Popup(0, new []{"No Locale Available"});
+                return;
+            }
+
+            int newIndex = EditorGUILayout.Popup(_localeIndex, _localeNameList);
+            if (newIndex == _localeIndex) return;
+
+            System.Diagnostics.Debug.Assert(_localeList != null, nameof(_localeList) + " != null");
+            _localeIndex = newIndex;
+            SetLocale(_localeList[newIndex]);
         }
 
         private static bool IsGuid([NotNull] string mayGuid)
