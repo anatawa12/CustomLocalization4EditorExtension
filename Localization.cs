@@ -103,6 +103,8 @@ namespace CustomLocalization4EditorExtension
             {
                 _locales.TryGetValue(_currentLocale, out _currentLocaleAsset); 
                 _locales.TryGetValue(_defaultLocale, out _defaultLocaleAsset);
+                if (_defaultLocaleAsset == null)
+                    Debug.LogError($"locale asset for default locale({_defaultLocale}) not found.");
             }
             _initialized = true;
         }
