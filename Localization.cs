@@ -115,25 +115,34 @@ namespace CustomLocalization4EditorExtension
         /// </param>
         /// <returns>The translated text or translation key</returns>
         [NotNull]
-        public string Tr([NotNull] string key)
+        public string Tr([NotNull] string key) => TryTr(key) ?? key;
+
+        /// <summary>
+        /// Translate the specified text via this Localization setting
+        /// </summary>
+        /// <param name="key">
+        /// The untranslated text. This should be english but can be changed via keyLocale of constructor.
+        /// </param>
+        /// <returns>The translated text or null</returns>
+        [CanBeNull]
+        public string TryTr([NotNull] string key)
         {
             if (!_initialized)
                 Setup();
 
-            var localized = key;
             if (_currentLocaleAsset != null)
             {
-                localized = _currentLocaleAsset.GetLocalizedString(key);
+                var localized = _currentLocaleAsset.GetLocalizedString(key);
                 if (localized != key) return localized;
             }
 
             if (_defaultLocaleAsset != null)
             {
-                localized = _defaultLocaleAsset.GetLocalizedString(key);
+                var localized = _defaultLocaleAsset.GetLocalizedString(key);
                 if (localized != key) return localized;
             }
 
-            return localized;
+            return null;
         }
 
         private static bool IsGuid([NotNull] string mayGuid)
