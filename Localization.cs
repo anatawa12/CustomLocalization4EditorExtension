@@ -5,7 +5,6 @@ using System.Linq;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine;
-using Object = UnityEngine.Object;
 
 namespace CustomLocalization4EditorExtension
 {
@@ -53,10 +52,9 @@ namespace CustomLocalization4EditorExtension
             {
                 try
                 {
-                    _locales = Directory.GetFiles($"{Application.dataPath}/{pathOfDirectory}")
-                        .Select(fileName => pathOfDirectory + fileName)
-                        .Select(AssetDatabase.LoadAssetAtPath<Object>)
-                        .OfType<LocalizationAsset>()
+                    _locales = Directory.GetFiles($"{pathOfDirectory}")
+                        .Select(AssetDatabase.LoadAssetAtPath<LocalizationAsset>)
+                        .Where(asset => asset != null)
                         .ToDictionary(asset => asset.localeIsoCode, asset => asset);
                 }
                 catch (IOException e)
