@@ -11,16 +11,26 @@ namespace CustomLocalization4EditorExtension
 {
     public class Localization
     {
+        // constructor configurations
         [NotNull] private readonly string _inputAssetPath;
-        [NotNull] private string _currentLocale;
-        [NotNull] private readonly string _defaultLocale;
-        [CanBeNull] private Dictionary<string, LocalizationAsset> _locales;
-        [CanBeNull] private string[] _localeList;
-        [CanBeNull] private string[] _localeNameList;
-        [CanBeNull] private LocalizationAsset _currentLocaleAsset;
-        [CanBeNull] private LocalizationAsset _defaultLocaleAsset;
-        private int _localeIndex;
+        [NotNull] private readonly string _defaultLocaleName;
+
+        // the if this is not null, we found at lease one localization asset(s).
+        [CanBeNull] private LocaleAssetConfig _config;
         private bool _initialized;
+
+        public string CurrentLocaleCode
+        {
+            [CanBeNull] get => _config?.CurrentLocaleCode;
+            [NotNull]
+            set
+            {
+                if (_config?.TrySetLocale(value) == false)
+                {
+                    throw new ArgumentException($"locale {value} not found", nameof(value));
+                }
+            }
+        }
 
         /// <summary>
         /// Instantiate Localization
@@ -33,10 +43,10 @@ namespace CustomLocalization4EditorExtension
         /// <exception cref="ArgumentException">Both keyLocale and defaultLocale are null</exception>
         public Localization(
             [NotNull] string localeAssetPath,
-            [NotNull] string defaultLocale) {
+            [NotNull] string defaultLocale)
+        {
             _inputAssetPath = localeAssetPath;
-            _defaultLocale = defaultLocale;
-            _currentLocale = _defaultLocale;
+            _defaultLocaleName = defaultLocale;
         }
 
         /// <summary>
@@ -47,113 +57,67 @@ namespace CustomLocalization4EditorExtension
         /// </summary>
         public void Setup()
         {
+            var currentLocaleCode = _config?.CurrentLocaleCode;
             _initialized = true;
-            // first, list-up locales
-            _locales = null;
-            _localeList = null;
-            void LoadDirectory(string pathOfDirectory)
-            {
-                try
-                {
-                    _locales = Directory.GetFiles($"{pathOfDirectory}")
-                        .Select(AssetDatabase.LoadAssetAtPath<LocalizationAsset>)
-                        .Where(asset => asset != null)
-                        .ToDictionary(asset => asset.localeIsoCode, asset => asset);
-                    if (_locales.Count == 0)
-                    {
-                        Debug.LogError($"no locales found at {pathOfDirectory}");
-                        return;
-                    }
 
-                    _localeList = _locales.Keys.ToArray();
-                    Array.Sort(_localeList);
-                    _localeNameList = _localeList
-                        .Select(id => TryGetLocalizedString(_locales[id], $"locale:{id}") ?? DefaultLocaleName(id))
-                        .ToArray();
-                    SetLocale(_currentLocale);
-                }
-                catch (IOException e)
-                {
-                    Debug.LogError(e);
-                }
-                catch (AggregateException e)
-                {
-                    Debug.LogError($"locale duplicated: {e}");
-                }
-            }
+            // reset
+            _config = null;
+
+            // find directories
+            string directoryPath = null;
 
             if (_inputAssetPath.EndsWith("/"))
             {
                 // it's asset path to folder
-                // folder: UnityEditor.DefaultAsset
                 if (Directory.Exists(_inputAssetPath))
-                    LoadDirectory(_inputAssetPath);
-                else
-                    Debug.LogError($"inputAssetPath not found: {_inputAssetPath}");
+                    directoryPath = _inputAssetPath;
             }
             else if (IsGuid(_inputAssetPath))
             {
                 // it's GUID to folder or LocalizationAsset
-                string path = AssetDatabase.GUIDToAssetPath(_inputAssetPath);
+                var path = AssetDatabase.GUIDToAssetPath(_inputAssetPath);
                 if (Directory.Exists(path))
-                    LoadDirectory(path);
+                    directoryPath = path;
                 else if (File.Exists(path))
-                    LoadDirectory(Path.GetDirectoryName(path));
-                else
-                    Debug.LogError($"inputAssetPath not found: {_inputAssetPath}");
+                    directoryPath = Path.GetDirectoryName(path);
             }
             else
             {
                 // it's asset path to LocalizationAsset
                 if (File.Exists(_inputAssetPath))
-                    LoadDirectory(Path.GetDirectoryName(_inputAssetPath));
-                else
-                    Debug.LogError($"inputAssetPath not found: {_inputAssetPath}");
+                    directoryPath = Path.GetDirectoryName(_inputAssetPath);
             }
 
-            // then, find current locale
-            if (_locales != null)
+            if (directoryPath == null)
             {
-                _locales.TryGetValue(_currentLocale, out _currentLocaleAsset); 
-                _locales.TryGetValue(_defaultLocale, out _defaultLocaleAsset);
-                if (_defaultLocaleAsset == null)
-                    Debug.LogError($"locale asset for default locale({_defaultLocale}) not found.");
-            }
-        }
-
-        private void SetLocale(string locale)
-        {
-            if (_localeList == null)
-                throw new InvalidOperationException("_localeList is null but SetLocale was called");
-            DoSetLocale(locale);
-            System.Diagnostics.Debug.Assert(_localeList != null, nameof(_localeList) + " != null");
-            System.Diagnostics.Debug.Assert(_locales != null, nameof(_locales) + " != null");
-            _currentLocaleAsset = _locales[_currentLocale];
-        }
-
-        private void DoSetLocale(string locale)
-        {
-            System.Diagnostics.Debug.Assert(_localeList != null, nameof(_localeList) + " != null");
-            _localeIndex = Array.IndexOf(_localeList, locale);
-            if (_localeIndex == -1)
-            {
-                Debug.LogWarning($"locale not found: {locale}");
-                DoSetLocale(locale == _defaultLocale ? _localeList[0] : _defaultLocale);
+                Debug.LogError($"inputAssetPath not found: {_inputAssetPath}");
                 return;
             }
-            _currentLocale = locale;
-        }
-
-        private static Dictionary<string, string> FallbackLocaleName = new Dictionary<string, string>();
-        private static string DefaultLocaleName(string code)
-        {
-            if (!FallbackLocaleName.TryGetValue(code, out var name))
+            try
             {
-                name = new CultureInfo(code).EnglishName;
-                FallbackLocaleName[code] = name;
-            }
+                var locales = Directory.GetFiles($"{directoryPath}")
+                    .Select(AssetDatabase.LoadAssetAtPath<LocalizationAsset>)
+                    .Where(asset => asset != null)
+                    .OrderBy(asset => asset.localeIsoCode)
+                    .Select((asset, i) => new LocaleInfo(asset, i))
+                    .ToArray();
 
-            return name;
+                if (locales.Length == 0)
+                {
+                    Debug.LogError($"no locales found at {directoryPath}");
+                    return;
+                }
+
+                _config = new LocaleAssetConfig(locales, _defaultLocaleName, currentLocaleCode);
+            }
+            catch (IOException e)
+            {
+                Debug.LogError(e);
+            }
+            catch (AggregateException e)
+            {
+                Debug.LogError($"locale duplicated: {e}");
+            }
         }
 
         /// <summary>
@@ -179,47 +143,132 @@ namespace CustomLocalization4EditorExtension
             if (!_initialized)
                 Setup();
 
-            return (_currentLocaleAsset == null ? null : TryGetLocalizedString(_currentLocaleAsset, key))
-                   ?? (_defaultLocaleAsset == null ? null : TryGetLocalizedString(_defaultLocaleAsset, key));
-        }
-
-        [CanBeNull]
-        private static string TryGetLocalizedString(LocalizationAsset asset, string key)
-        {
-            string localized;
-            return (localized = asset.GetLocalizedString(key)) != key ? localized : null;
+            return _config?.TryGetLocalizedString(key);
         }
 
         public void DrawLanguagePicker()
         {
-            if (_localeNameList == null)
+            if (_config == null)
             {
-                EditorGUILayout.Popup(0, new []{"No Locale Available"});
+                EditorGUILayout.Popup(0, new[] { "No Locale Available" });
                 return;
             }
 
-            int newIndex = EditorGUILayout.Popup(_localeIndex, _localeNameList);
-            if (newIndex == _localeIndex) return;
-
-            System.Diagnostics.Debug.Assert(_localeList != null, nameof(_localeList) + " != null");
-            _localeIndex = newIndex;
-            SetLocale(_localeList[newIndex]);
+            _config.DrawLanguagePicker();
         }
+
+        #region utilities
 
         private static bool IsGuid([NotNull] string mayGuid)
         {
             int hexCnt = 0;
             foreach (var c in mayGuid)
             {
+#pragma warning disable CS642
                 if ('0' <= c && c <= '9') hexCnt++;
                 else if ('a' <= c && c <= 'f') hexCnt++;
                 else if ('A' <= c && c <= 'F') hexCnt++;
-                else if (c == '-') {}
+                else if (c == '-') ;
                 else return false;
+#pragma warning restore CS642
+
                 if (hexCnt > 32) return false;
             }
 
             return hexCnt == 32;
+        }
+
+        #endregion
+    }
+
+    class LocaleAssetConfig
+    {
+        [NotNull] private readonly LocaleInfo[] _locales;
+        [NotNull] private readonly string[] _localeNameList;
+        [CanBeNull] private readonly LocaleInfo _defaultLocale;
+        [NotNull] private LocaleInfo _currentLocale;
+
+        public LocaleAssetConfig(
+            [NotNull] LocaleInfo[] locales,
+            [NotNull] string defaultLocaleName,
+            [CanBeNull] string currentLocaleCode)
+        {
+            if (locales.Length == 0)
+                throw new ArgumentException("empty", nameof(locales));
+            _locales = locales;
+            _localeNameList = _locales.Select(id => id.Name).ToArray();
+            _defaultLocale = _locales.FirstOrDefault(loc => loc.Asset.localeIsoCode == defaultLocaleName);
+            if (_defaultLocale == null)
+                Debug.LogError($"locale asset for default locale({defaultLocaleName}) not found.");
+
+            if (currentLocaleCode == null)
+            {
+                // previous locale is not exists. use default
+                _currentLocale = _defaultLocale ?? _locales[0];
+            }
+            else if (!TrySetLocale(currentLocaleCode))
+            {
+                Debug.LogWarning($"locale not found: {currentLocaleCode}");
+                _currentLocale = _defaultLocale ?? _locales[0];
+            }
+        }
+
+        public string CurrentLocaleCode => _currentLocale.Asset != null ? _currentLocale.Asset.localeIsoCode : null;
+
+        public bool TrySetLocale(string localeCode)
+        {
+            var locale = _locales.FirstOrDefault(loc => loc.Asset.localeIsoCode == localeCode);
+            if (locale == null) return false;
+
+            _currentLocale = locale;
+
+            return true;
+        }
+
+        public void DrawLanguagePicker()
+        {
+            int newIndex = EditorGUILayout.Popup(_currentLocale.Index, _localeNameList);
+            if (newIndex == _currentLocale.Index) return;
+
+            _currentLocale = _locales[newIndex];
+        }
+
+        public string TryGetLocalizedString(string key)
+        {
+            return _currentLocale.TryGetLocalizedString(key) ?? _defaultLocale?.TryGetLocalizedString(key);
+        }
+    }
+
+    class LocaleInfo
+    {
+        public readonly LocalizationAsset Asset;
+        public readonly int Index;
+        public readonly string Name;
+
+        public LocaleInfo(LocalizationAsset asset, int index)
+        {
+            Asset = asset;
+            Index = index;
+            Name = TryGetLocalizedString($"locale:{asset.localeIsoCode}") ?? DefaultLocaleName(asset.localeIsoCode);
+        }
+
+        [CanBeNull]
+        public string TryGetLocalizedString(string key)
+        {
+            string localized;
+            return Asset != null && (localized = Asset.GetLocalizedString(key)) != key ? localized : null;
+        }
+
+        private static readonly Dictionary<string, string> FallbackLocaleNames = new Dictionary<string, string>();
+
+        private static string DefaultLocaleName(string code)
+        {
+            if (FallbackLocaleNames.TryGetValue(code, out var name)) return name;
+
+            name = new CultureInfo(code).EnglishName;
+            FallbackLocaleNames[code] = name;
+
+            return name;
         }
     }
 }
