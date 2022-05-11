@@ -67,6 +67,9 @@ namespace CustomLocalization4EditorExtension
 
                     _localeList = _locales.Keys.ToArray();
                     Array.Sort(_localeList);
+                    _localeNameList = _localeList
+                        .Select(id => TryGetLocalizedString(_locales[id], $"locale:{id}") ?? DefaultLocaleName(id))
+                        .ToArray();
                     SetLocale(_currentLocale);
                 }
                 catch (IOException e)
@@ -126,9 +129,6 @@ namespace CustomLocalization4EditorExtension
             System.Diagnostics.Debug.Assert(_localeList != null, nameof(_localeList) + " != null");
             System.Diagnostics.Debug.Assert(_locales != null, nameof(_locales) + " != null");
             _currentLocaleAsset = _locales[_currentLocale];
-            _localeNameList = _localeList
-                .Select(id => TryTr($"locale:{id}") ?? DefaultLocaleName(id))
-                .ToArray();
         }
 
         private void DoSetLocale(string locale)
@@ -144,13 +144,13 @@ namespace CustomLocalization4EditorExtension
             _currentLocale = locale;
         }
 
-        private static Dictionary<string, string> LocaleName = new Dictionary<string, string>();
+        private static Dictionary<string, string> FallbackLocaleName = new Dictionary<string, string>();
         private static string DefaultLocaleName(string code)
         {
-            if (!LocaleName.TryGetValue(code, out var name))
+            if (!FallbackLocaleName.TryGetValue(code, out var name))
             {
                 name = new CultureInfo(code).EnglishName;
-                LocaleName[code] = name;
+                FallbackLocaleName[code] = name;
             }
 
             return name;
@@ -179,19 +179,15 @@ namespace CustomLocalization4EditorExtension
             if (!_initialized)
                 Setup();
 
-            if (_currentLocaleAsset != null)
-            {
-                var localized = _currentLocaleAsset.GetLocalizedString(key);
-                if (localized != key) return localized;
-            }
+            return (_currentLocaleAsset == null ? null : TryGetLocalizedString(_currentLocaleAsset, key))
+                   ?? (_defaultLocaleAsset == null ? null : TryGetLocalizedString(_defaultLocaleAsset, key));
+        }
 
-            if (_defaultLocaleAsset != null)
-            {
-                var localized = _defaultLocaleAsset.GetLocalizedString(key);
-                if (localized != key) return localized;
-            }
-
-            return null;
+        [CanBeNull]
+        private static string TryGetLocalizedString(LocalizationAsset asset, string key)
+        {
+            string localized;
+            return (localized = asset.GetLocalizedString(key)) != key ? localized : null;
         }
 
         public void DrawLanguagePicker()
