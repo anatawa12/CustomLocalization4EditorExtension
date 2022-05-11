@@ -53,7 +53,7 @@ namespace CustomLocalization4EditorExtension
             {
                 try
                 {
-                    _locales = Directory.GetFiles(pathOfDirectory)
+                    _locales = Directory.GetFiles($"{Application.dataPath}/{pathOfDirectory}")
                         .Select(fileName => pathOfDirectory + fileName)
                         .Select(AssetDatabase.LoadAssetAtPath<Object>)
                         .OfType<LocalizationAsset>()
