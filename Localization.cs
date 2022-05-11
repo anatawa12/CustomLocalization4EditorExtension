@@ -164,13 +164,13 @@ namespace CustomLocalization4EditorExtension
             int hexCnt = 0;
             foreach (var c in mayGuid)
             {
-#pragma warning disable CS642
+#pragma warning disable CS0642
                 if ('0' <= c && c <= '9') hexCnt++;
                 else if ('a' <= c && c <= 'f') hexCnt++;
                 else if ('A' <= c && c <= 'F') hexCnt++;
-                else if (c == '-') ;
+                else if (c == '-');
                 else return false;
-#pragma warning restore CS642
+#pragma warning restore CS0642
 
                 if (hexCnt > 32) return false;
             }
