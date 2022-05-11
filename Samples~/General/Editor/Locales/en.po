@@ -1,0 +1,9 @@
+msgid ""
+msgstr ""
+"Language: en\n"
+
+msgid "error"
+msgstr "Unknown system error"
+
+msgid "locale:en"
+msgstr "English"

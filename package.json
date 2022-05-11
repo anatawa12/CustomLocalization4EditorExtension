@@ -7,5 +7,12 @@
     "url": "https://anatawa12.com/"
   },
   "description": "The experimental library for Unity extensions which want to have custom locale for translation instead of unity's locale.",
-  "type": "library"
+  "type": "library",
+  "samples": [
+    {
+      "displayName": "General",
+      "description": "Contains simple ui with localizable",
+      "path": "Samples~/General"
+    }
+  ]
 }
