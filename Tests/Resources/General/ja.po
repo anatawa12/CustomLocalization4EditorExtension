@@ -1,0 +1,12 @@
+msgid ""
+msgstr ""
+"Language: ja\n"
+
+msgid "load-successful-identifier"
+msgstr "ロード成功"
+
+msgid "ja-only"
+msgstr "日本語のみ"
+
+msgid "locale:ja"
+msgstr "日本語"

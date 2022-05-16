@@ -1,0 +1,12 @@
+msgid ""
+msgstr ""
+"Language: en\n"
+
+msgid "load-successful-identifier"
+msgstr "load successful"
+
+msgid "default-locale-only"
+msgstr "default locale only"
+
+msgid "locale:en"
+msgstr "English"
