@@ -8,7 +8,6 @@
   },
   "description": "The experimental library for Unity extensions which want to have custom locale for translation instead of unity's locale.",
   "type": "library",
-  "private": true,
   "samples": [
     {
       "displayName": "General",
