@@ -1,6 +1,10 @@
 name: Publisher
 on:
   - workflow_dispatch
+
+permissions:
+  contents: write
+
 jobs:
   build:
     environment: deployment
@@ -36,6 +40,7 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          sleep 1
           gh release create "v$(get-version)"
 
       - name: Update To Next Version
