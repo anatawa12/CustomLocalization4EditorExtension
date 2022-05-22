@@ -23,7 +23,7 @@ jobs:
             echo 'VERSION IS NOT SNAPSHOT' >&2
             exit 1
           fi
-          VERSION="$(version-unsnapshot "$VERSION")"
+          VERSION="$(version-stable "$VERSION")"
           set-version "$VERSION"
           # commit & tag
           git add .
