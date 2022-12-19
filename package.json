@@ -9,6 +9,8 @@
   "description": "The experimental library for Unity extensions which want to have custom locale for translation instead of unity's locale.",
   "type": "library",
   "license": "MIT",
+  "url": "https://github.com/anatawa12/CustomLocalization4EditorExtension",
+  "repo": "https://vpm.anatawa12.com/vpm.json",
   "samples": [
     {
       "displayName": "General",
