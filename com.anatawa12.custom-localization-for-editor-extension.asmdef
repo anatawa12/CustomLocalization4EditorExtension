@@ -1,14 +1,14 @@
 {
-    "name": "Anatawa12.Unity.CustomLocalization4EditorExtension",
+    "name": "com.anatawa12.custom-localization-for-editor-extension",
     "references": [],
     "includePlatforms": [
         "Editor"
     ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
-    "overrideReferences": false,
+    "overrideReferences": true,
     "precompiledReferences": [],
-    "autoReferenced": true,
+    "autoReferenced": false,
     "defineConstraints": [],
     "versionDefines": [],
     "noEngineReferences": false

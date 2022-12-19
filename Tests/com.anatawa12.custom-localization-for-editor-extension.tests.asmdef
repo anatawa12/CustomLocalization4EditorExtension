@@ -1,9 +1,9 @@
 {
-    "name": "Anatawa12.Unity.CustomLocalization4EditorExtension.Tests",
+    "name": "com.anatawa12.custom-localization-for-editor-extension.tests",
     "references": [
-        "UnityEditor.TestRunner",
-        "UnityEngine.TestRunner",
-        "Anatawa12.Unity.CustomLocalization4EditorExtension"
+        "GUID:0acc523941302664db1f4e527237feb3",
+        "GUID:27619889b8ba8c24980f49ee34dbb44a",
+        "GUID:295ffbe0b63504ae3a7879cf089501ba"
     ],
     "includePlatforms": [
         "Editor"
