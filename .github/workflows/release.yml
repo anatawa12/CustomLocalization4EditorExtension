@@ -51,6 +51,7 @@ jobs:
           gh release create "v$(get-version)" \
             "$VPM_ZIP" \
             "package.json"
+          rm "$VPM_ZIP"
 
       - name: Update To Next Version
         run: |
