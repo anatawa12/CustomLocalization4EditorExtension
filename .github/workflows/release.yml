@@ -5,6 +5,9 @@ on:
 permissions:
   contents: write
 
+env:
+  PACKAGE_NAME: com.anatawa12.custom-localization-for-editor-extension
+
 jobs:
   build:
     environment: deployment
@@ -35,13 +38,19 @@ jobs:
           git tag "v$VERSION"
           git push && git push --tags
 
+          echo "VPM_ZIP=$PACKAGE_NAME-$VERSION.zip" >> $GITHUB_ENV
+
+      - name: Create VPM release
+        run: find . -not -path '*/.*' | zip "$VPM_ZIP" -@
 
       - name: Create New Release
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           sleep 1
-          gh release create "v$(get-version)"
+          gh release create "v$(get-version)" \
+            "$VPM_ZIP" \
+            "package.json"
 
       - name: Update To Next Version
         run: |
