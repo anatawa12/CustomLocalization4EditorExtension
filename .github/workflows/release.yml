@@ -12,6 +12,8 @@ jobs:
   build:
     environment: deployment
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.up.outputs.version }}
     steps:
       - uses: actions/checkout@v2
         with:
@@ -40,6 +42,7 @@ jobs:
 
           echo "VPM_ZIP=$PACKAGE_NAME-$VERSION.zip" >> $GITHUB_ENV
           echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
 
       - name: Create VPM release
         run: find . -not -path '*/.*' | zip "$VPM_ZIP" -@
@@ -63,17 +66,12 @@ jobs:
           git commit -m "prepare for next version: $VERSION"
           git push
 
-      - name: Prepare Dispatch payload
-        run: |
-          echo "PAYLOAD=$(echo "{}" | jq -c \
-              --arg REPO "$GITHUB_REPOSITORY" \
-              --arg VERSION "$VERSION" \
-              '.repository=$REPO | .version=$VERSION')" \
-             >> "$GITHUB_ENV"
-      - name: Dispatch vpm repo update
-        uses: peter-evans/repository-dispatch@v2
-        with:
-          token: "${{ secrets.ACTIONS_PAT }}"
-          repository: anatawa12/vpm.anatawa12.com
-          event-type: update-package
-          client-payload: ${{ env.PAYLOAD }}
+  publish-vpm:
+    uses: anatawa12/vpm.anatawa12.com/.github/workflows/update-package.yml@master
+    if: inputs.publish
+    needs: create-release
+    with:
+      version: ${{ needs.build.outputs.version }}
+      environment: vpm.anatawa12.com
+    secrets:
+      TOKEN: ${{ secrets.VPM_GITHUB_PAT }}
