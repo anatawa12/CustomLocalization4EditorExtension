@@ -40,6 +40,8 @@ namespace CustomLocalization4EditorExtension
             }
         }
 
+        private static readonly float LanguagePickerHeight = EditorGUIUtility.singleLineHeight;
+
         /// <summary>
         /// Instantiate Localization
         /// </summary>
@@ -155,16 +157,21 @@ namespace CustomLocalization4EditorExtension
             return _config?.TryGetLocalizedString(key);
         }
 
-        public void DrawLanguagePicker()
+        public void DrawLanguagePicker() =>
+            DrawLanguagePicker(EditorGUILayout.GetControlRect(false, GetDrawLanguagePickerHeight()));
+
+        public void DrawLanguagePicker(Rect rect)
         {
             if (_config == null)
             {
-                EditorGUILayout.Popup(0, new[] { "No Locale Available" });
+                EditorGUI.Popup(rect, 0, new[] { "No Locale Available" });
                 return;
             }
 
-            _config.DrawLanguagePicker();
+            _config.DrawLanguagePicker(rect);
         }
+
+        public float GetDrawLanguagePickerHeight() => LanguagePickerHeight;
 
         #region utilities
 
@@ -233,9 +240,9 @@ namespace CustomLocalization4EditorExtension
                 return true;
             }
 
-            public void DrawLanguagePicker()
+            public void DrawLanguagePicker(Rect rect)
             {
-                int newIndex = EditorGUILayout.Popup(_currentLocale.Index, _localeNameList);
+                int newIndex = EditorGUI.Popup(rect, _currentLocale.Index, _localeNameList);
                 if (newIndex == _currentLocale.Index) return;
 
                 _currentLocale = _locales[newIndex];
