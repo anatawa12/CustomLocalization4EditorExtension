@@ -1,11 +1,11 @@
 using CustomLocalization4EditorExtension;
 using UnityEditor;
 
-namespace CustomLocalization4EditorExtension.Sample.General
+namespace CustomLocalization4EditorExtension.Sample.Legacy
 {
     public class LocalizationTest : EditorWindow
     {
-        [MenuItem("CustomLocalization4EditorExtension/LocalizationTest")]
+        [MenuItem("CustomLocalization4EditorExtension/LocalizationTest Legacy")]
         public static void Open()
         {
             GetWindow<LocalizationTest>();

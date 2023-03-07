@@ -1,0 +1,15 @@
+{
+    "name": "com.anatawa12.custom-localization-for-editor-extension.samples.legacy",
+    "references": [
+        "GUID:295ffbe0b63504ae3a7879cf089501ba"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": true,
+    "precompiledReferences": [],
+    "autoReferenced": false,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

@@ -13,9 +13,9 @@
   "repo": "https://vpm.anatawa12.com/vpm.json",
   "samples": [
     {
-      "displayName": "General",
-      "description": "Contains simple ui with localizable",
-      "path": "Samples~/General"
+      "displayName": "Legacy API",
+      "description": "Contains simple ui with localizable with Legacy API",
+      "path": "Samples~/Legacy"
     }
   ]
 }
