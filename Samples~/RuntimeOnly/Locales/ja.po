@@ -1,0 +1,21 @@
+msgid ""
+msgstr ""
+"Language: ja\n"
+
+msgid "prop:testField"
+msgstr "文字列のフィールド"
+
+msgid "prop:testRangedField"
+msgstr "範囲付きフィールド"
+
+msgid "prop:testComplexField"
+msgstr "構造体"
+
+msgid "prop:inStruct"
+msgstr "構造体の中"
+
+msgid "error"
+msgstr "不明なエラーが発生しました"
+
+msgid "locale:ja"
+msgstr "日本語"

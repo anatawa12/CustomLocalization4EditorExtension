@@ -1,0 +1,21 @@
+msgid ""
+msgstr ""
+"Language: en\n"
+
+msgid "prop:testField"
+msgstr "test string field"
+
+msgid "prop:testRangedField"
+msgstr "test field with range"
+
+msgid "prop:testComplexField"
+msgstr "struct field"
+
+msgid "prop:inStruct"
+msgstr "fields in struct"
+
+msgid "error"
+msgstr "Unknown system error"
+
+msgid "locale:en"
+msgstr "English"
