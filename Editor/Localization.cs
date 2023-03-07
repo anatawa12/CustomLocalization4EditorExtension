@@ -5,6 +5,7 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine;
@@ -286,6 +287,202 @@ namespace CustomLocalization4EditorExtension
                 return name;
             }
         }
+
+        #region PropertyDrawers
+
+        [CustomPropertyDrawer(typeof(CL4EELocalizedAttribute))]
+        class LocalizedAttributeDrawer : PropertyDrawer
+        {
+            private PropertyDrawer _upstreamDrawer;
+            private GUIContent _label;
+            private bool _initialized;
+
+            public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+            {
+                InitializeUpstream(property);
+                return _upstreamDrawer?.GetPropertyHeight(property, _label) ?? GetDefaultPropertyHeight(property, _label);
+            }
+
+            public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+            {
+                InitializeUpstream(property);
+                if (_upstreamDrawer != null)
+                    _upstreamDrawer.OnGUI(position, property, _label);
+                else
+                    OnGUIDefault(position, property, _label);
+            }
+
+            private void InitializeUpstream(SerializedProperty property)
+            {
+                if (_initialized) return;
+                {
+                    var attr = (CL4EELocalizedAttribute)attribute;
+                    var localization = L10N.GetLocalization(fieldInfo.Module.Assembly);
+                    _label = new GUIContent(localization?.Tr(attr.LocalizationKey) ?? attr.LocalizationKey);
+                    if (attr.TooltipKey != null)
+                        _label.tooltip = localization?.Tr(attr.TooltipKey) ?? attr.TooltipKey;
+                }
+
+                foreach (var propAttr in fieldInfo.GetCustomAttributes<PropertyAttribute>()
+                             .SkipWhile(x => x.GetType() != typeof(CL4EELocalizedAttribute))
+                             .Skip(1))
+                    HandleDrawnType(property, propAttr.GetType(), propAttr);
+
+                // if we cannot find upstream PropertyDrawer, we find it using 
+                if (_upstreamDrawer == null)
+                {
+                    var type = fieldInfo.FieldType;
+                    // the path ends with array element
+                    if (Regex.IsMatch(property.propertyPath, "\\.Array\\.data\\[[0-9]+\\]$"))
+                    {
+                        if (type.IsArray)
+                        {
+                            type = type.GetElementType() ?? throw new InvalidOperationException();
+                        }
+                        else if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+                        {
+                            type = type.GetGenericArguments()[0];
+                        }
+                    }
+
+                    HandleDrawnType(property, type, null);
+                }
+
+                _initialized = true;
+            }
+
+            public void HandleDrawnType(SerializedProperty property, Type drawnType, PropertyAttribute attr)
+            {
+                Type forPropertyAndType = Reflections.GetDrawerTypeForPropertyAndType(property, drawnType);
+                if (forPropertyAndType == null)
+                    return;
+                if (typeof (PropertyDrawer).IsAssignableFrom(forPropertyAndType))
+                {
+                    _upstreamDrawer = (PropertyDrawer) Activator.CreateInstance(forPropertyAndType);
+                    Reflections.SetFieldAndAttribute(_upstreamDrawer, fieldInfo, attr);
+                }
+            }
+
+            private float GetDefaultPropertyHeight(SerializedProperty property, GUIContent label)
+            {
+                property = property.Copy();
+                var height = EditorGUI.GetPropertyHeight(property.propertyType, label);
+                var enterChildren = property.isExpanded && HasVisibleChildFields(property);
+                if (!enterChildren) return height;
+
+                var label1 = new GUIContent(_label.text);
+                var endProperty = property.GetEndProperty();
+                while (property.NextVisible(enterChildren) && !SerializedProperty.EqualContents(property, endProperty))
+                {
+                    height += EditorGUI.GetPropertyHeight(property, label1, true);
+                    height += EditorGUIUtility.standardVerticalSpacing;
+                    enterChildren = false;
+                }
+
+                return height;
+            }
+
+            private void OnGUIDefault(Rect position, SerializedProperty property, GUIContent label)
+            {
+                // cache value
+                var iconSize = EditorGUIUtility.GetIconSize();
+                var enabled = GUI.enabled;
+                var indentLevel = EditorGUI.indentLevel;
+
+                var indentLevelOffset = indentLevel - property.depth;
+
+                var serializedProperty = property.Copy();
+                position.height = EditorGUI.GetPropertyHeight(serializedProperty.propertyType, label);
+                EditorGUI.indentLevel = serializedProperty.depth + indentLevelOffset;
+                var enterChildren = Reflections.DefaultPropertyField(position, serializedProperty, label) &&
+                                    HasVisibleChildFields(serializedProperty);
+                position.y += position.height + EditorGUIUtility.standardVerticalSpacing;
+                if (enterChildren)
+                {
+                    var endProperty = serializedProperty.GetEndProperty();
+                    while (serializedProperty.NextVisible(enterChildren) && !SerializedProperty.EqualContents(serializedProperty, endProperty))
+                    {
+                        EditorGUI.indentLevel = serializedProperty.depth + indentLevelOffset;
+                        position.height = EditorGUI.GetPropertyHeight(serializedProperty, null, false);
+                        EditorGUI.BeginChangeCheck();
+                        enterChildren = EditorGUI.PropertyField(position, serializedProperty, null, false) &&
+                                        HasVisibleChildFields(serializedProperty);
+                        if (EditorGUI.EndChangeCheck())
+                            break;
+                        position.y += position.height + EditorGUIUtility.standardVerticalSpacing;
+                    }
+                }
+
+                // restore value
+                GUI.enabled = enabled;
+                EditorGUIUtility.SetIconSize(iconSize);
+                EditorGUI.indentLevel = indentLevel;
+            }
+            
+            private static bool HasVisibleChildFields(SerializedProperty property)
+            {
+                switch (property.propertyType)
+                {
+                    case SerializedPropertyType.Vector2:
+                    case SerializedPropertyType.Vector3:
+                    case SerializedPropertyType.Rect:
+                    case SerializedPropertyType.Bounds:
+                    case SerializedPropertyType.Vector2Int:
+                    case SerializedPropertyType.Vector3Int:
+                    case SerializedPropertyType.RectInt:
+                    case SerializedPropertyType.BoundsInt:
+                        return false;
+                    default:
+                        return property.hasVisibleChildren;
+                }
+            }
+        }
+
+        static class Reflections
+        {
+            [NotNull] private static readonly MethodInfo GetDrawerTypeForPropertyAndTypeInfo;
+            [NotNull] private static readonly FieldInfo FieldInfoInfo;
+            [NotNull] private static readonly FieldInfo AttributeInfo;
+            [NotNull] private static readonly MethodInfo DefaultPropertyFieldInfo;
+
+            static Reflections()
+            {
+                var type = typeof(Editor).Assembly.GetType("UnityEditor.ScriptAttributeUtility");
+                var methodInfo = type.GetMethod("GetDrawerTypeForPropertyAndType",
+                    BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
+                    null,
+                    new[] { typeof(SerializedProperty), typeof(Type) },
+                    null);
+                GetDrawerTypeForPropertyAndTypeInfo = methodInfo ?? throw new InvalidOperationException();
+                FieldInfoInfo = typeof(PropertyDrawer).GetField("m_FieldInfo", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) ?? throw new InvalidOperationException();
+                AttributeInfo = typeof(PropertyDrawer).GetField("m_Attribute", BindingFlags.Instance | BindingFlags.NonPublic | BindingFlags.Public) ?? throw new InvalidOperationException();
+                DefaultPropertyFieldInfo = typeof(EditorGUI)
+                    .GetMethod("DefaultPropertyField",
+                        BindingFlags.NonPublic | BindingFlags.Public | BindingFlags.Static,
+                        null,
+                        new[]
+                        {
+                            typeof(Rect),
+                            typeof(SerializedProperty),
+                            typeof(GUIContent),
+                        },
+                        null) ?? throw new InvalidOperationException();
+            }
+
+            public static Type GetDrawerTypeForPropertyAndType(SerializedProperty property, Type type) => 
+                (Type)GetDrawerTypeForPropertyAndTypeInfo.Invoke(null, new object[] { property, type });
+
+            public static void SetFieldAndAttribute(PropertyDrawer drawer, FieldInfo fieldInfo, PropertyAttribute attribute)
+            {
+                FieldInfoInfo.SetValue(drawer, fieldInfo);
+                AttributeInfo.SetValue(drawer, attribute);
+            }
+
+            internal static bool DefaultPropertyField(Rect position, SerializedProperty property, GUIContent label) =>
+                (bool)DefaultPropertyFieldInfo.Invoke(null, new object[] { position, property, label });
+        }
+
+        #endregion
     }
 
 #if COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE
