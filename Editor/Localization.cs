@@ -290,42 +290,106 @@ namespace CustomLocalization4EditorExtension
 
         #region PropertyDrawers
 
+        [CustomPropertyDrawer(typeof(CL4EELocalePickerAttribute))]
+        class LocalePickerAttribute : InheritingDrawer<CL4EELocalePickerAttribute>
+        {
+            [CanBeNull] private Localization _localization;
+
+            public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+            {
+                InitializeUpstream(property);
+                return (_localization?.GetDrawLanguagePickerHeight() ?? EditorGUIUtility.singleLineHeight)
+                       + EditorGUIUtility.standardVerticalSpacing
+                       + base.GetPropertyHeight(property, label);
+            }
+
+            public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+            {
+                InitializeUpstream(property);
+
+                var prevHeight = position.height;
+
+                if (_localization == null)
+                {
+                    position.height = EditorGUIUtility.singleLineHeight;
+                    EditorGUI.LabelField(position, "ERROR", "CL4EE Localization Instance Not Found");
+                    position.y += EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+                    position.height = prevHeight - EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
+                }
+                else
+                {
+                    var height = position.height = _localization.GetDrawLanguagePickerHeight();
+                    _localization.DrawLanguagePicker(position);
+                    position.y += height + EditorGUIUtility.standardVerticalSpacing;
+                    position.height = prevHeight - height + EditorGUIUtility.standardVerticalSpacing;
+                }
+
+                base.OnGUI(position, property, label);
+            }
+
+            protected override void Initialize()
+            {
+                _localization = L10N.GetLocalization(fieldInfo.Module.Assembly);
+            }
+        }
+
         [CustomPropertyDrawer(typeof(CL4EELocalizedAttribute))]
-        class LocalizedAttributeDrawer : PropertyDrawer
+        class LocalizedAttributeDrawer : InheritingDrawer<CL4EELocalizedAttribute>
+        {
+            private GUIContent _label;
+
+            public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+            {
+                InitializeUpstream(property);
+                return base.GetPropertyHeight(property, _label);
+            }
+
+            public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+            {
+                InitializeUpstream(property);
+                base.OnGUI(position, property, _label);
+            }
+
+            protected override void Initialize()
+            {
+                var attr = (CL4EELocalizedAttribute)attribute;
+                var localization = L10N.GetLocalization(fieldInfo.Module.Assembly);
+                _label = new GUIContent(localization?.Tr(attr.LocalizationKey) ?? attr.LocalizationKey);
+                if (attr.TooltipKey != null)
+                    _label.tooltip = localization?.Tr(attr.TooltipKey) ?? attr.TooltipKey;
+            }
+        }
+
+        abstract class InheritingDrawer<TAttr> : PropertyDrawer where TAttr : PropertyAttribute
         {
             private PropertyDrawer _upstreamDrawer;
-            private GUIContent _label;
             private bool _initialized;
 
             public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
             {
                 InitializeUpstream(property);
-                return _upstreamDrawer?.GetPropertyHeight(property, _label) ?? GetDefaultPropertyHeight(property, _label);
+                return _upstreamDrawer?.GetPropertyHeight(property, label) ?? GetDefaultPropertyHeight(property, label);
             }
 
             public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
             {
                 InitializeUpstream(property);
                 if (_upstreamDrawer != null)
-                    _upstreamDrawer.OnGUI(position, property, _label);
+                    _upstreamDrawer.OnGUI(position, property, label);
                 else
-                    OnGUIDefault(position, property, _label);
+                    OnGUIDefault(position, property, label);
             }
 
-            private void InitializeUpstream(SerializedProperty property)
+            protected abstract void Initialize();
+
+            protected void InitializeUpstream(SerializedProperty property)
             {
                 if (_initialized) return;
-                {
-                    var attr = (CL4EELocalizedAttribute)attribute;
-                    var localization = L10N.GetLocalization(fieldInfo.Module.Assembly);
-                    _label = new GUIContent(localization?.Tr(attr.LocalizationKey) ?? attr.LocalizationKey);
-                    if (attr.TooltipKey != null)
-                        _label.tooltip = localization?.Tr(attr.TooltipKey) ?? attr.TooltipKey;
-                }
+                Initialize();
 
                 foreach (var propAttr in fieldInfo.GetCustomAttributes<PropertyAttribute>()
-                             .SkipWhile(x => x.GetType() != typeof(CL4EELocalizedAttribute))
-                             .Skip(1))
+                             .Reverse()
+                             .TakeWhile(x => x.GetType() != typeof(TAttr)))
                     HandleDrawnType(property, propAttr.GetType(), propAttr);
 
                 // if we cannot find upstream PropertyDrawer, we find it using 
@@ -351,7 +415,7 @@ namespace CustomLocalization4EditorExtension
                 _initialized = true;
             }
 
-            public void HandleDrawnType(SerializedProperty property, Type drawnType, PropertyAttribute attr)
+            private void HandleDrawnType(SerializedProperty property, Type drawnType, PropertyAttribute attr)
             {
                 Type forPropertyAndType = Reflections.GetDrawerTypeForPropertyAndType(property, drawnType);
                 if (forPropertyAndType == null)
@@ -370,7 +434,7 @@ namespace CustomLocalization4EditorExtension
                 var enterChildren = property.isExpanded && HasVisibleChildFields(property);
                 if (!enterChildren) return height;
 
-                var label1 = new GUIContent(_label.text);
+                var label1 = new GUIContent(label.text);
                 var endProperty = property.GetEndProperty();
                 while (property.NextVisible(enterChildren) && !SerializedProperty.EqualContents(property, endProperty))
                 {

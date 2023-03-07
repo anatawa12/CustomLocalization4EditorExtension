@@ -26,6 +26,20 @@ namespace CustomLocalization4EditorExtension
     }
 
     /// <summary>
+    /// Put LocalePicker on the top of the field.
+    /// Due to technical reasons, the picker is implemented as PropertyDrawer so
+    /// The picker will be drawn at the bottom of the Decorators such as <see cref="HeaderAttribute"/>
+    /// </summary>
+#if COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE
+    public
+#else
+    internal
+#endif
+        // ReSharper disable once InconsistentNaming
+        sealed class CL4EELocalePickerAttribute : PropertyAttribute
+    {
+    } 
+    /// <summary>
     /// Use localized name for the property name in the Inspector.
     /// If you want to combine with other PropertyDrawer (e.g. <see cref="RangeAttribute"/>),
     /// Please put this attribute at the top of PropertyDrawer.
