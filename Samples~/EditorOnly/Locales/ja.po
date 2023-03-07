@@ -1,0 +1,12 @@
+msgid ""
+msgstr ""
+"Language: ja\n"
+
+msgid "prop:key"
+msgstr "翻訳キー"
+
+msgid "error"
+msgstr "不明なエラーが発生しました"
+
+msgid "locale:ja"
+msgstr "日本語"

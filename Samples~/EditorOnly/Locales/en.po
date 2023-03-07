@@ -1,0 +1,12 @@
+msgid ""
+msgstr ""
+"Language: en\n"
+
+msgid "prop:key"
+msgstr "localization key"
+
+msgid "error"
+msgstr "Unknown system error"
+
+msgid "locale:en"
+msgstr "English"
