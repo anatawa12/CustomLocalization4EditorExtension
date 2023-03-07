@@ -585,6 +585,15 @@ namespace CustomLocalization4EditorExtension
         public static string Tr([NotNull] string localizationKey) =>
             GetLocalization(Assembly.GetCallingAssembly())?.Tr(localizationKey) ?? localizationKey;
 
+        public static void DrawLanguagePicker()
+        {
+            var localization = GetLocalization(Assembly.GetCallingAssembly());
+            if (localization == null)
+                EditorGUILayout.LabelField("ERROR", "CL4EE Localization Instance Not Found");
+            else
+                localization.DrawLanguagePicker();
+        }
+
         [NotNull]
         private static Func<Localization> GetLocalizationGetter([NotNull] Assembly assembly)
         {
