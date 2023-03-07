@@ -10,6 +10,12 @@
     "precompiledReferences": [],
     "autoReferenced": false,
     "defineConstraints": [],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "Unity",
+            "expression": "",
+            "define": "COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE"
+        }
+    ],
     "noEngineReferences": false
 }
