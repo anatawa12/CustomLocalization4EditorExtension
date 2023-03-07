@@ -9,6 +9,7 @@ using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 
 namespace CustomLocalization4EditorExtension
 {
@@ -336,7 +337,10 @@ namespace CustomLocalization4EditorExtension
         [CustomPropertyDrawer(typeof(CL4EELocalizedAttribute))]
         class LocalizedAttributeDrawer : InheritingDrawer<CL4EELocalizedAttribute>
         {
-            private GUIContent _label;
+            private CL4EELocalizedAttribute _attribute;
+            [CanBeNull] private Localization _localization;
+            private string _localeCode;
+            private GUIContent _label = new GUIContent();
 
             public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
             {
@@ -347,16 +351,26 @@ namespace CustomLocalization4EditorExtension
             public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
             {
                 InitializeUpstream(property);
+                Update();
                 base.OnGUI(position, property, _label);
             }
 
             protected override void Initialize()
             {
-                var attr = (CL4EELocalizedAttribute)attribute;
-                var localization = L10N.GetLocalization(fieldInfo.Module.Assembly);
-                _label = new GUIContent(localization?.Tr(attr.LocalizationKey) ?? attr.LocalizationKey);
-                if (attr.TooltipKey != null)
-                    _label.tooltip = localization?.Tr(attr.TooltipKey) ?? attr.TooltipKey;
+                _attribute = (CL4EELocalizedAttribute)attribute;
+                _localization = L10N.GetLocalization(fieldInfo.Module.Assembly);
+                Update(true);
+            }
+
+            private void Update(bool force = false)
+            {
+                if (force || _localeCode != _localization?.CurrentLocaleCode)
+                {
+                    _label = new GUIContent(_localization?.Tr(_attribute.LocalizationKey) ?? _attribute.LocalizationKey);
+                    if (_attribute.TooltipKey != null)
+                        _label.tooltip = _localization?.Tr(_attribute.TooltipKey) ?? _attribute.TooltipKey;
+                    _localeCode = _localization?.CurrentLocaleCode;
+                }
             }
         }
 
