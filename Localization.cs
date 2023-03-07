@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine;
@@ -15,7 +16,7 @@ namespace CustomLocalization4EditorExtension
 #else
     internal
 #endif
-        class Localization
+        sealed class Localization
     {
         // constructor configurations
         [NotNull] private readonly string _inputAssetPath;
@@ -276,6 +277,145 @@ namespace CustomLocalization4EditorExtension
 
                 return name;
             }
+        }
+    }
+
+#if COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE
+    public
+#else
+    internal
+#endif
+        static class L10N
+    {
+        private static readonly Dictionary<Assembly, Func<Localization>> LocalizationGetter =
+            new Dictionary<Assembly, Func<Localization>>();
+
+        /// <returns>Localization instance for caller assembly</returns>
+        [CanBeNull]
+        public static Localization GetLocalization() => GetLocalization(Assembly.GetCallingAssembly());
+
+        [CanBeNull]
+        public static Localization GetLocalization([NotNull] Assembly assembly) => GetLocalizationGetter(assembly)?.Invoke();
+
+        [NotNull]
+        public static string Tr([NotNull] string localizationKey) =>
+            GetLocalization(Assembly.GetCallingAssembly())?.Tr(localizationKey) ?? localizationKey;
+
+        [CanBeNull]
+        private static Func<Localization> GetLocalizationGetter([NotNull] Assembly assembly)
+        {
+            if (LocalizationGetter.TryGetValue(assembly, out var getter))
+                return getter;
+
+            if (IsDisallowedAssemblyName(assembly.GetName().Name))
+            {
+                Debug.LogError("Getting Assembly for unity default assemblies are not allowed.");
+                return null;
+            }
+
+            if (assembly.GetCustomAttribute<RedirectCL4EEInstanceAttribute>() is RedirectCL4EEInstanceAttribute attr)
+            {
+                Assembly redirectTo = null;
+                try
+                {
+                    redirectTo = Assembly.Load(attr.RedirectToName);
+                }
+                catch (Exception e)
+                {
+                    Debug.LogError(
+                        $"Unable to load redirected assembly for {assembly.GetName().Name} ({attr.RedirectToName}).");
+                    Debug.LogException(e);
+                }
+
+                if (redirectTo != null)
+                    return GetLocalizationGetter(redirectTo);
+            }
+
+            const BindingFlags bindingFlags = BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic;
+
+            var types = assembly.GetTypes();
+
+            var properties = types.SelectMany(x => x.GetProperties(bindingFlags))
+                .Where(x => x.PropertyType == typeof(Localization))
+                .Where(x => x.GetMethod != null)
+                .Where(x => x.GetCustomAttribute<AssemblyCL4EELocalizationAttribute>() != null)
+                .ToArray();
+
+            if (properties.Length == 0)
+            {
+                Debug.LogError($"Static property with AssemblyLocalizationInstanceAttribute not found for {assembly}");
+                getter = null;
+            }
+            else
+            {
+                if (properties.Length != 1)
+                {
+                    Debug.LogError(
+                        $"Multiple static property with AssemblyLocalizationInstanceAttribute not found for {assembly}! First one will be used");
+                }
+
+                var propertyInfo = properties[0];
+                var getterMethod = propertyInfo.GetMethod;
+
+                getter = (Func<Localization>)Delegate.CreateDelegate(typeof(Func<Localization>), getterMethod);
+            }
+
+            LocalizationGetter[assembly] = getter;
+
+            return getter;
+        }
+
+        // default assembly names are not allowed.
+        // https://docs.unity3d.com/ja/2019.4/Manual/ScriptCompileOrderFolders.html
+        private static bool IsDisallowedAssemblyName(string name)
+        {
+            switch (name)
+            {
+                case "Assembly-CSharp-firstpass":
+                case "Assembly-CSharp-Editor-firstpass":
+                case "Assembly-CSharp":
+                case "Assembly-CSharp-Editor":
+                    return true;
+                default:
+                    return false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Specifies the Localization instance for that assembly.
+    /// You can use specified instance using <see cref="L10N"/> class or Cl4EeLocalizedAttribute (to be implemented)
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Property)]
+#if COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE
+    public
+#else
+    internal
+#endif
+        // ReSharper disable once InconsistentNaming
+        sealed class AssemblyCL4EELocalizationAttribute : Attribute
+    {
+        
+    }
+
+    /// <summary>
+    /// Use CL4EE Localization instance of other Assembly for this assembly.
+    /// You can share CL4EE Localization instance between multiple assembly using this attribute.
+    /// </summary>
+    [AttributeUsage(AttributeTargets.Assembly)]
+#if COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE
+    public
+#else
+    internal
+#endif
+        // ReSharper disable once InconsistentNaming
+        sealed class RedirectCL4EEInstanceAttribute : Attribute
+    {
+        public string RedirectToName { get; }
+
+        public RedirectCL4EEInstanceAttribute(string redirectToName)
+        {
+            RedirectToName = redirectToName;
         }
     }
 }
