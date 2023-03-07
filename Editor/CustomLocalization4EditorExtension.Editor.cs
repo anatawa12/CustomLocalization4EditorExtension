@@ -293,45 +293,38 @@ namespace CustomLocalization4EditorExtension
         #region PropertyDrawers
 
         [CustomPropertyDrawer(typeof(CL4EELocalePickerAttribute))]
-        class LocalePickerAttribute : InheritingDrawer<CL4EELocalePickerAttribute>
+        class LocalePickerAttribute : DecoratorDrawer
         {
+            private bool _initialized;
             [CanBeNull] private Localization _localization;
 
-            public override float GetPropertyHeight(SerializedProperty property, GUIContent label)
+            public override float GetHeight()
             {
-                InitializeUpstream(property);
+                Initialize();
                 return (_localization?.GetDrawLanguagePickerHeight() ?? EditorGUIUtility.singleLineHeight)
-                       + EditorGUIUtility.standardVerticalSpacing
-                       + base.GetPropertyHeight(property, label);
+                       + EditorGUIUtility.standardVerticalSpacing;
             }
 
-            public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
+            public override void OnGUI(Rect position)
             {
-                InitializeUpstream(property);
-
-                var prevHeight = position.height;
+                position.height -= EditorGUIUtility.standardVerticalSpacing;
 
                 if (_localization == null)
                 {
-                    position.height = EditorGUIUtility.singleLineHeight;
                     EditorGUI.LabelField(position, "ERROR", "CL4EE Localization Instance Not Found");
-                    position.y += EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
-                    position.height = prevHeight - EditorGUIUtility.singleLineHeight + EditorGUIUtility.standardVerticalSpacing;
                 }
                 else
                 {
-                    var height = position.height = _localization.GetDrawLanguagePickerHeight();
                     _localization.DrawLanguagePicker(position);
-                    position.y += height + EditorGUIUtility.standardVerticalSpacing;
-                    position.height = prevHeight - height + EditorGUIUtility.standardVerticalSpacing;
                 }
-
-                base.OnGUI(position, property, label);
             }
 
-            protected override void Initialize()
+            protected void Initialize()
             {
-                _localization = L10N.GetLocalization(fieldInfo.Module.Assembly);
+                if (_initialized) return;
+                var attr = (CL4EELocalePickerAttribute)attribute;
+                _localization = L10N.GetLocalization(attr.TargetAssembly);
+                _initialized = true;
             }
         }
 

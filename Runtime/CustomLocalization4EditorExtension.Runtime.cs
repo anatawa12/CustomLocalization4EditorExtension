@@ -1,4 +1,5 @@
 using System;
+using System.Reflection;
 using JetBrains.Annotations;
 using UnityEngine;
 
@@ -27,8 +28,7 @@ namespace CustomLocalization4EditorExtension
 
     /// <summary>
     /// Put LocalePicker on the top of the field.
-    /// Due to technical reasons, the picker is implemented as PropertyDrawer so
-    /// The picker will be drawn at the bottom of the Decorators such as <see cref="HeaderAttribute"/>
+    /// Due to technical reasons, You need specify target Assembly
     /// </summary>
 #if COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE
     public
@@ -38,7 +38,24 @@ namespace CustomLocalization4EditorExtension
         // ReSharper disable once InconsistentNaming
         sealed class CL4EELocalePickerAttribute : PropertyAttribute
     {
-    } 
+        public Assembly TargetAssembly { get; }
+
+        public CL4EELocalePickerAttribute(Assembly targetAssembly) => TargetAssembly = targetAssembly;
+
+        public CL4EELocalePickerAttribute(Type typeBelongsToTargetAssembly) :
+            this(typeBelongsToTargetAssembly.Assembly)
+        {
+        }
+
+#if !COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE
+        // as a embed library, assembly of localization library & tool are same.
+        public CL4EELocalePickerAttribute() : this(typeof(CL4EELocalePickerAttribute).Assembly)
+        {
+
+        }
+#endif
+    }
+
     /// <summary>
     /// Use localized name for the property name in the Inspector.
     /// If you want to combine with other PropertyDrawer (e.g. <see cref="RangeAttribute"/>),
