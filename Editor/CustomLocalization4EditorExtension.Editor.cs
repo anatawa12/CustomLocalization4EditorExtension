@@ -108,6 +108,7 @@ namespace CustomLocalization4EditorExtension
 
             try
             {
+                // It's weird but Directory.GetFiles works fine even with fake `Packages/<package-id>` paths.
                 var locales = Directory.GetFiles($"{directoryPath}")
                     .Select(AssetDatabase.LoadAssetAtPath<LocalizationAsset>)
                     .Where(asset => asset != null)
