@@ -296,13 +296,13 @@ namespace CustomLocalization4EditorExtension
         public static Localization GetLocalization() => GetLocalization(Assembly.GetCallingAssembly());
 
         [CanBeNull]
-        public static Localization GetLocalization([NotNull] Assembly assembly) => GetLocalizationGetter(assembly)?.Invoke();
+        public static Localization GetLocalization([NotNull] Assembly assembly) => GetLocalizationGetter(assembly)();
 
         [NotNull]
         public static string Tr([NotNull] string localizationKey) =>
             GetLocalization(Assembly.GetCallingAssembly())?.Tr(localizationKey) ?? localizationKey;
 
-        [CanBeNull]
+        [NotNull]
         private static Func<Localization> GetLocalizationGetter([NotNull] Assembly assembly)
         {
             if (LocalizationGetter.TryGetValue(assembly, out var getter))
@@ -311,7 +311,7 @@ namespace CustomLocalization4EditorExtension
             if (IsDisallowedAssemblyName(assembly.GetName().Name))
             {
                 Debug.LogError("Getting Assembly for unity default assemblies are not allowed.");
-                return null;
+                return () => null;
             }
 
             if (assembly.GetCustomAttribute<RedirectCL4EEInstanceAttribute>() is RedirectCL4EEInstanceAttribute attr)
@@ -345,7 +345,7 @@ namespace CustomLocalization4EditorExtension
             if (properties.Length == 0)
             {
                 Debug.LogError($"Static property with AssemblyLocalizationInstanceAttribute not found for {assembly}");
-                getter = null;
+                getter = () => null;
             }
             else
             {
