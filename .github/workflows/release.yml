@@ -69,7 +69,7 @@ jobs:
   publish-vpm:
     uses: anatawa12/vpm.anatawa12.com/.github/workflows/update-package.yml@master
     if: inputs.publish
-    needs: create-release
+    needs: build
     with:
       version: ${{ needs.build.outputs.version }}
       environment: vpm.anatawa12.com
