@@ -71,8 +71,8 @@ I recommend you to use GUID because it doesn't change if tool users changed loca
 
     Notice: Due to Unity API's limit & internal implementation of CL4EE, you should not make un-localized string same as localized string.
     It means localized string is not defined in CL4EE.
-9. Preparation is done! You can use `L10N.Tr("localization key")` to get localized text, add `[CL4EELocalized("localization key")]` attribute to localize property name in inspector, 
-`L10N.DrawLanguagePicker()` or `[CL4EELocalePickerAttribute(typeof(your class))]` to draw Language Picker on inspector.
+9. Preparation is done! You can use `CL4EE.Tr("localization key")` to get localized text, add `[CL4EELocalized("localization key")]` attribute to localize property name in inspector, 
+`CL4EE.DrawLanguagePicker()` or `[CL4EELocalePickerAttribute(typeof(your class))]` to draw Language Picker on inspector.
 
 [openupm]: https://openupm.com/
 [openupm-pkg]: https://openupm.com/packages/com.anatawa12.custom-localization-for-editor-extension/

@@ -17,11 +17,11 @@ namespace CustomLocalization4EditorExtension.Sample.EditorOnly
 
         private void OnGUI()
         {
-            L10N.DrawLanguagePicker();
-            _input = EditorGUILayout.TextField(L10N.Tr("prop:key"), _input);
+            CL4EE.DrawLanguagePicker();
+            _input = EditorGUILayout.TextField(CL4EE.Tr("prop:key"), _input);
             if (_input != null)
             {
-                EditorGUILayout.LabelField(L10N.Tr(_input));
+                EditorGUILayout.LabelField(CL4EE.Tr(_input));
             }
         }
     }

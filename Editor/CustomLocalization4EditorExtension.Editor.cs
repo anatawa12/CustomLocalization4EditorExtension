@@ -323,7 +323,7 @@ namespace CustomLocalization4EditorExtension
             {
                 if (_initialized) return;
                 var attr = (CL4EELocalePickerAttribute)attribute;
-                _localization = L10N.GetLocalization(attr.TargetAssembly);
+                _localization = CL4EE.GetLocalization(attr.TargetAssembly);
                 _initialized = true;
             }
         }
@@ -352,7 +352,7 @@ namespace CustomLocalization4EditorExtension
             protected override void Initialize()
             {
                 _attribute = (CL4EELocalizedAttribute)attribute;
-                _localization = L10N.GetLocalization(fieldInfo.Module.Assembly);
+                _localization = CL4EE.GetLocalization(fieldInfo.Module.Assembly);
                 Update(true);
             }
 
@@ -562,7 +562,8 @@ namespace CustomLocalization4EditorExtension
 #else
     internal
 #endif
-        static class L10N
+        // ReSharper disable once InconsistentNaming
+        static class CL4EE
     {
         private static readonly Dictionary<Assembly, Func<Localization>> LocalizationGetter =
             new Dictionary<Assembly, Func<Localization>>();
@@ -670,7 +671,7 @@ namespace CustomLocalization4EditorExtension
 
     /// <summary>
     /// Specifies the Localization instance for that assembly.
-    /// You can use specified instance using <see cref="L10N"/> class or Cl4EeLocalizedAttribute (to be implemented)
+    /// You can use specified instance using <see cref="CL4EE"/> class or Cl4EeLocalizedAttribute (to be implemented)
     /// </summary>
     [MeansImplicitUse]
     [AttributeUsage(AttributeTargets.Property)]
