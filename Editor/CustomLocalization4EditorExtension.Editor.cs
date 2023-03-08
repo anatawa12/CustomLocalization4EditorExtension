@@ -672,6 +672,7 @@ namespace CustomLocalization4EditorExtension
     /// Specifies the Localization instance for that assembly.
     /// You can use specified instance using <see cref="L10N"/> class or Cl4EeLocalizedAttribute (to be implemented)
     /// </summary>
+    [MeansImplicitUse]
     [AttributeUsage(AttributeTargets.Property)]
 #if COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE
     public
