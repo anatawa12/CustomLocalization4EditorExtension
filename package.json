@@ -1,6 +1,6 @@
 {
   "name": "com.anatawa12.custom-localization-for-editor-extension",
-  "version": "1.0.0-SNAPSHOT",
+  "version": "1.0.0",
   "displayName": "CustomLocalization4EditorExtension",
   "author": {
     "name": "anatawa12",
