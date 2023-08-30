@@ -24,6 +24,7 @@ namespace CustomLocalization4EditorExtension
         // constructor configurations
         [NotNull] private readonly string _inputAssetPath;
         [NotNull] private readonly string _defaultLocaleName;
+        [NotNull] private readonly string _localeSettingEditorPrefsKey;
 
         // the if this is not null, we found at lease one localization asset(s).
         [CanBeNull] private LocaleAssetConfig _config;
@@ -59,6 +60,28 @@ namespace CustomLocalization4EditorExtension
         {
             _inputAssetPath = localeAssetPath;
             _defaultLocaleName = defaultLocale;
+            _localeSettingEditorPrefsKey =
+                $"com.anatawa12.custom-localization-for-editor-extension.locale.{localeAssetPath}";
+        }
+
+        /// <summary>
+        /// Instantiate Localization
+        /// </summary>
+        /// <param name="localeAssetPath">
+        /// The asset path or GUID of <code cref="LocalizationAsset">LocalizationAsset</code> or
+        /// the asset path to directory contains <code cref="LocalizationAsset">LocalizationAsset</code>s.
+        /// </param>
+        /// <param name="defaultLocale">The fallback locale of localization.</param>
+        /// <param name="localeSettingEditorPrefsKey">The <see cref="EditorPrefs"/> key to store current locale</param>
+        /// <exception cref="ArgumentException">Both keyLocale and defaultLocale are null</exception>
+        public Localization(
+            [NotNull] string localeAssetPath,
+            [NotNull] string defaultLocale,
+            [NotNull] string localeSettingEditorPrefsKey)
+        {
+            _inputAssetPath = localeAssetPath;
+            _defaultLocaleName = defaultLocale;
+            _localeSettingEditorPrefsKey = localeSettingEditorPrefsKey;
         }
 
         /// <summary>
@@ -122,7 +145,7 @@ namespace CustomLocalization4EditorExtension
                     return;
                 }
 
-                _config = new LocaleAssetConfig(locales, _defaultLocaleName, currentLocaleCode);
+                _config = new LocaleAssetConfig(locales, _defaultLocaleName, currentLocaleCode, _localeSettingEditorPrefsKey);
             }
             catch (IOException e)
             {
@@ -202,18 +225,27 @@ namespace CustomLocalization4EditorExtension
         class LocaleAssetConfig
         {
             [NotNull] private readonly LocaleInfo[] _locales;
+            [NotNull] private readonly string _localeSettingEditorPrefsKey;
             [NotNull] private readonly string[] _localeNameList;
             [CanBeNull] private readonly LocaleInfo _defaultLocale;
             [NotNull] private LocaleInfo _currentLocale;
 
-            public LocaleAssetConfig(
-                [NotNull] LocaleInfo[] locales,
+            public LocaleAssetConfig([NotNull] LocaleInfo[] locales,
                 [NotNull] string defaultLocaleName,
-                [CanBeNull] string currentLocaleCode)
+                [CanBeNull] string currentLocaleCode, 
+                [NotNull] string localeSettingEditorPrefsKey)
             {
                 if (locales.Length == 0)
                     throw new ArgumentException("empty", nameof(locales));
+
+                if (currentLocaleCode == null)
+                {
+                    var foundLocale = EditorPrefs.GetString(localeSettingEditorPrefsKey);
+                    if (!string.IsNullOrEmpty(foundLocale)) currentLocaleCode = foundLocale;
+                }
+
                 _locales = locales;
+                _localeSettingEditorPrefsKey = localeSettingEditorPrefsKey;
                 _localeNameList = _locales.Select(id => id.Name).ToArray();
                 _defaultLocale = _locales.FirstOrDefault(loc => loc.Asset.localeIsoCode == defaultLocaleName);
                 if (_defaultLocale == null)
@@ -238,6 +270,8 @@ namespace CustomLocalization4EditorExtension
                 var locale = _locales.FirstOrDefault(loc => loc.Asset.localeIsoCode == localeCode);
                 if (locale == null) return false;
 
+                EditorPrefs.SetString(_localeSettingEditorPrefsKey, localeCode);
+
                 _currentLocale = locale;
 
                 return true;
@@ -249,6 +283,7 @@ namespace CustomLocalization4EditorExtension
                 if (newIndex == _currentLocale.Index) return;
 
                 _currentLocale = _locales[newIndex];
+                EditorPrefs.SetString(_localeSettingEditorPrefsKey, _currentLocale.Asset.localeIsoCode);
             }
 
             public string TryGetLocalizedString(string key)
