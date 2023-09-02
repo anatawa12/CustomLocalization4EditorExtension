@@ -84,4 +84,4 @@ I recommend you to use GUID because it doesn't change if tool users changed loca
 [asmref]: https://docs.unity3d.com/Manual/ScriptCompilationAssemblyDefinitionFiles.html#create-asmref
 [LocalizationAsset]: https://docs.unity3d.com/ScriptReference/LocalizationAsset.html
 [po-gettext]: https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html
-[unity-bug] :https://issuetracker.unity3d.com/issues/crash-on-gettargetassemblybyscriptpath-when-a-po-file-in-the-packages-directory-is-not-under-an-assembly-definition
+[unity-bug]: https://issuetracker.unity3d.com/issues/crash-on-gettargetassemblybyscriptpath-when-a-po-file-in-the-packages-directory-is-not-under-an-assembly-definition
