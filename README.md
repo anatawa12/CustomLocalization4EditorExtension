@@ -71,7 +71,9 @@ I recommend you to use GUID because it doesn't change if tool users changed loca
 
     Notice: Due to Unity API's limit & internal implementation of CL4EE, you should not make un-localized string same as localized string.
     It means localized string is not defined in CL4EE.
-9. Preparation is done! You can use `CL4EE.Tr("localization key")` to get localized text, add `[CL4EELocalized("localization key")]` attribute to localize property name in inspector, 
+
+    Notice: Due to [Bug in Unity Editor 2022.3 or later][unity-bug], you should place assembly definition file in folder for LocalizationAssets.
+10. Preparation is done! You can use `CL4EE.Tr("localization key")` to get localized text, add `[CL4EELocalized("localization key")]` attribute to localize property name in inspector, 
 `CL4EE.DrawLanguagePicker()` or `[CL4EELocalePickerAttribute(typeof(your class))]` to draw Language Picker on inspector.
 
 [openupm]: https://openupm.com/
@@ -82,3 +84,4 @@ I recommend you to use GUID because it doesn't change if tool users changed loca
 [asmref]: https://docs.unity3d.com/Manual/ScriptCompilationAssemblyDefinitionFiles.html#create-asmref
 [LocalizationAsset]: https://docs.unity3d.com/ScriptReference/LocalizationAsset.html
 [po-gettext]: https://www.gnu.org/software/gettext/manual/html_node/PO-Files.html
+[unity-bug] :https://issuetracker.unity3d.com/issues/crash-on-gettargetassemblybyscriptpath-when-a-po-file-in-the-packages-directory-is-not-under-an-assembly-definition
