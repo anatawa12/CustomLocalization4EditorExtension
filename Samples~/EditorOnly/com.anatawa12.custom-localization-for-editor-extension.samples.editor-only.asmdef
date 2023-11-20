@@ -1,9 +1,11 @@
 {
     "name": "com.anatawa12.custom-localization-for-editor-extension.samples.editor-only",
     "references": [
-        "GUID:295ffbe0b63504ae3a7879cf089501ba"
+        "com.anatawa12.custom-localization-for-editor-extension"
     ],
-    "includePlatforms": [],
+    "includePlatforms": [
+        "Editor"
+    ],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": true,
