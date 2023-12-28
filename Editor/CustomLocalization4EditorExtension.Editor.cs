@@ -9,7 +9,6 @@ using System.Text.RegularExpressions;
 using JetBrains.Annotations;
 using UnityEditor;
 using UnityEngine;
-using UnityEngine.SocialPlatforms;
 
 namespace CustomLocalization4EditorExtension
 {
@@ -40,6 +39,17 @@ namespace CustomLocalization4EditorExtension
                 {
                     throw new ArgumentException($"locale {value} not found", nameof(value));
                 }
+            }
+        }
+
+        public IReadOnlyDictionary<string, LocaleLocalization> LocalizationByIsoCode
+        {
+            get
+            {
+                if (!_initialized)
+                    Setup();
+
+                return _config?.ParsedByIsoCode ?? new Dictionary<string, LocaleLocalization>();
             }
         }
 
@@ -136,7 +146,7 @@ namespace CustomLocalization4EditorExtension
                     .Select(AssetDatabase.LoadAssetAtPath<LocalizationAsset>)
                     .Where(asset => asset != null)
                     .OrderBy(asset => asset.localeIsoCode)
-                    .Select((asset, i) => new LocaleInfo(asset, i))
+                    .Select(NewParsedLocalization)
                     .ToArray();
 
                 if (locales.Length == 0)
@@ -156,6 +166,17 @@ namespace CustomLocalization4EditorExtension
                 Debug.LogError($"locale duplicated: {e}");
             }
         }
+        
+#pragma warning disable CS0618 // Type or member is obsolete
+        [NotNull]
+        private static LocaleLocalization NewParsedLocalization(LocalizationAsset asset) =>
+            NewParsedLocalization0(asset);
+
+        [Obsolete("Error Remover")]
+        [NotNull]
+        private static LocaleLocalization NewParsedLocalization0(LocalizationAsset asset) =>
+            new LocaleLocalization(asset);
+#pragma warning restore CS0618 // Type or member is obsolete
 
         /// <summary>
         /// Translate the specified text via this Localization setting
@@ -224,13 +245,27 @@ namespace CustomLocalization4EditorExtension
 
         class LocaleAssetConfig
         {
-            [NotNull] private readonly LocaleInfo[] _locales;
+            [NotNull] private readonly LocaleLocalization[] _locales;
             [NotNull] private readonly string _localeSettingEditorPrefsKey;
             [NotNull] private readonly string[] _localeNameList;
-            [CanBeNull] private readonly LocaleInfo _defaultLocale;
-            [NotNull] private LocaleInfo _currentLocale;
+            [CanBeNull] private readonly LocaleLocalization _defaultLocale;
+            
+            [NotNull] private LocaleLocalization CurrentLocale {
+                get => _currentLocale;
+                set
+                {
+                    var index = Array.IndexOf(_locales, value);
+                    if (index == -1) throw new ArgumentException("invalid locale for this localization");
+                    _currentLocaleIndex = index;
+                    _currentLocale = value;
+                }
+            }
+            [NotNull] private LocaleLocalization _currentLocale;
+            private int _currentLocaleIndex;
 
-            public LocaleAssetConfig([NotNull] LocaleInfo[] locales,
+            public readonly IReadOnlyDictionary<string, LocaleLocalization> ParsedByIsoCode;
+
+            public LocaleAssetConfig([NotNull] LocaleLocalization[] locales,
                 [NotNull] string defaultLocaleName,
                 [CanBeNull] string currentLocaleCode, 
                 [NotNull] string localeSettingEditorPrefsKey)
@@ -247,81 +282,49 @@ namespace CustomLocalization4EditorExtension
                 _locales = locales;
                 _localeSettingEditorPrefsKey = localeSettingEditorPrefsKey;
                 _localeNameList = _locales.Select(id => id.Name).ToArray();
-                _defaultLocale = _locales.FirstOrDefault(loc => loc.Asset.localeIsoCode == defaultLocaleName);
+
+                ParsedByIsoCode = _locales.ToDictionary(x => x.LocaleIsoCode);
+
+                ParsedByIsoCode.TryGetValue(defaultLocaleName, out _defaultLocale);
                 if (_defaultLocale == null)
                     Debug.LogError($"locale asset for default locale({defaultLocaleName}) not found.");
 
                 if (currentLocaleCode == null)
                 {
                     // previous locale is not exists. use default
-                    _currentLocale = _defaultLocale ?? _locales[0];
+                    CurrentLocale = _defaultLocale ?? _locales[0];
                 }
                 else if (!TrySetLocale(currentLocaleCode))
                 {
                     Debug.LogWarning($"locale not found: {currentLocaleCode}");
-                    _currentLocale = _defaultLocale ?? _locales[0];
+                    CurrentLocale = _defaultLocale ?? _locales[0];
                 }
             }
 
-            public string CurrentLocaleCode => _currentLocale.Asset != null ? _currentLocale.Asset.localeIsoCode : null;
+            public string CurrentLocaleCode => CurrentLocale.LocaleIsoCode;
 
             public bool TrySetLocale(string localeCode)
             {
-                var locale = _locales.FirstOrDefault(loc => loc.Asset.localeIsoCode == localeCode);
-                if (locale == null) return false;
+                if (!ParsedByIsoCode.TryGetValue(localeCode, out var locale)) return false;
 
                 EditorPrefs.SetString(_localeSettingEditorPrefsKey, localeCode);
 
-                _currentLocale = locale;
-
+                CurrentLocale = locale;
                 return true;
             }
 
             public void DrawLanguagePicker(Rect rect)
             {
-                int newIndex = EditorGUI.Popup(rect, _currentLocale.Index, _localeNameList);
-                if (newIndex == _currentLocale.Index) return;
+                int newIndex = EditorGUI.Popup(rect, _currentLocaleIndex, _localeNameList);
+                if (newIndex == _currentLocaleIndex) return;
 
-                _currentLocale = _locales[newIndex];
-                EditorPrefs.SetString(_localeSettingEditorPrefsKey, _currentLocale.Asset.localeIsoCode);
+                CurrentLocale = _locales[newIndex];
+                EditorPrefs.SetString(_localeSettingEditorPrefsKey, CurrentLocale.LocaleIsoCode);
             }
 
             public string TryGetLocalizedString(string key)
             {
-                return _currentLocale.TryGetLocalizedString(key) ?? _defaultLocale?.TryGetLocalizedString(key);
-            }
-        }
-
-        class LocaleInfo
-        {
-            public readonly LocalizationAsset Asset;
-            public readonly int Index;
-            public readonly string Name;
-
-            public LocaleInfo(LocalizationAsset asset, int index)
-            {
-                Asset = asset;
-                Index = index;
-                Name = TryGetLocalizedString($"locale:{asset.localeIsoCode}") ?? DefaultLocaleName(asset.localeIsoCode);
-            }
-
-            [CanBeNull]
-            public string TryGetLocalizedString(string key)
-            {
-                string localized;
-                return Asset != null && (localized = Asset.GetLocalizedString(key)) != key ? localized : null;
-            }
-
-            private static readonly Dictionary<string, string> FallbackLocaleNames = new Dictionary<string, string>();
-
-            private static string DefaultLocaleName(string code)
-            {
-                if (FallbackLocaleNames.TryGetValue(code, out var name)) return name;
-
-                name = new CultureInfo(code).EnglishName;
-                FallbackLocaleNames[code] = name;
-
-                return name;
+                return CurrentLocale.TryGetLocalizedString(key) ?? _defaultLocale?.TryGetLocalizedString(key);
             }
         }
 
@@ -590,6 +593,45 @@ namespace CustomLocalization4EditorExtension
         }
 
         #endregion
+    }
+
+#if COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE
+    public
+#else
+    internal
+#endif
+        class LocaleLocalization
+    {
+        private LocalizationAsset Asset { get; }
+        public string Name { get; }
+        public string LocaleIsoCode { get; }
+
+        [Obsolete("Internal CL4EE API. Don't use this.", error: true)]
+        internal LocaleLocalization(LocalizationAsset asset)
+        {
+            Asset = asset;
+            LocaleIsoCode = asset.localeIsoCode;
+            Name = TryGetLocalizedString($"locale:{asset.localeIsoCode}") ?? DefaultLocaleName(asset.localeIsoCode);
+        }
+
+        [CanBeNull]
+        public string TryGetLocalizedString(string key)
+        {
+            string localized;
+            return Asset != null && (localized = Asset.GetLocalizedString(key)) != key ? localized : null;
+        }
+
+        private static readonly Dictionary<string, string> FallbackLocaleNames = new Dictionary<string, string>();
+
+        private static string DefaultLocaleName(string code)
+        {
+            if (FallbackLocaleNames.TryGetValue(code, out var name)) return name;
+
+            name = new CultureInfo(code).EnglishName;
+            FallbackLocaleNames[code] = name;
+
+            return name;
+        }
     }
 
 #if COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE
