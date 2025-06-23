@@ -33,7 +33,7 @@ namespace CustomLocalization4EditorExtension
         /// The callback when the locale is changed.
         /// This callback will be called after changing locale so accessing <c cref="CurrentLocaleCode"/> will return the new locale code and calling <c cref="Tr">Tr</c> will return the localized string for the new locale.
         /// </summary>
-        public event Action OnLocaleChanged;
+        public event Action<string> OnLocaleChanged;
 
         public string CurrentLocaleCode
         {
@@ -162,7 +162,7 @@ namespace CustomLocalization4EditorExtension
                 }
 
                 _config = new LocaleAssetConfig(locales, _defaultLocaleName, currentLocaleCode, _localeSettingEditorPrefsKey);
-                _config.OnLocaleChanged += () => OnLocaleChanged?.Invoke();
+                _config.OnLocaleChanged += () => OnLocaleChanged?.Invoke(_config.CurrentLocaleCode);
             }
             catch (IOException e)
             {
