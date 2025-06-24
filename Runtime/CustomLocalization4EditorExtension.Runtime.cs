@@ -1,6 +1,17 @@
+#if UNITY_2020_2_OR_NEWER
+#define CSHARP_NULLABLE_SUPPORTED
+#endif
+
 using System;
 using System.Reflection;
-using JetBrains.Annotations;
+#if CSHARP_NULLABLE_SUPPORTED
+using System.Diagnostics.CodeAnalysis;
+#else
+using AllowNullAttribute = JetBrains.Annotations.CanBeNullAttribute;
+using DisallowNullAttribute = JetBrains.Annotations.NotNullAttribute;
+using MaybeNullAttribute = JetBrains.Annotations.CanBeNullAttribute;
+using NotNullAttribute = JetBrains.Annotations.NotNullAttribute;
+#endif
 using UnityEngine;
 
 namespace CustomLocalization4EditorExtension
@@ -70,11 +81,11 @@ namespace CustomLocalization4EditorExtension
         sealed class CL4EELocalizedAttribute : PropertyAttribute
     {
         [NotNull] public string LocalizationKey { get; }
-        [CanBeNull] public string TooltipKey { get; }
+        [MaybeNull] public string TooltipKey { get; }
 
-        public CL4EELocalizedAttribute([NotNull] string localizationKey) : this(localizationKey, null) {}
+        public CL4EELocalizedAttribute([DisallowNull] string localizationKey) : this(localizationKey, null) {}
 
-        public CL4EELocalizedAttribute([NotNull] string localizationKey, [CanBeNull] string tooltipKey)
+        public CL4EELocalizedAttribute([DisallowNull] string localizationKey, [AllowNull] string tooltipKey)
         {
             LocalizationKey = localizationKey ?? throw new ArgumentNullException(nameof(localizationKey));
             TooltipKey = tooltipKey;

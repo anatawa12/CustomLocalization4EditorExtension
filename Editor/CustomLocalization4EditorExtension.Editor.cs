@@ -1,3 +1,7 @@
+#if UNITY_2020_2_OR_NEWER
+#define CSHARP_NULLABLE_SUPPORTED
+#endif
+
 #if UNITY_EDITOR
 using System;
 using System.Collections.Generic;
@@ -6,7 +10,14 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using JetBrains.Annotations;
+#if CSHARP_NULLABLE_SUPPORTED
+using System.Diagnostics.CodeAnalysis;
+#else
+using AllowNullAttribute = JetBrains.Annotations.CanBeNullAttribute;
+using DisallowNullAttribute = JetBrains.Annotations.NotNullAttribute;
+using MaybeNullAttribute = JetBrains.Annotations.CanBeNullAttribute;
+using NotNullAttribute = JetBrains.Annotations.NotNullAttribute;
+#endif
 using UnityEditor;
 using UnityEngine;
 
@@ -26,20 +37,29 @@ namespace CustomLocalization4EditorExtension
         [NotNull] private readonly string _localeSettingEditorPrefsKey;
 
         // the if this is not null, we found at lease one localization asset(s).
-        [CanBeNull] private LocaleAssetConfig _config;
-        private bool _initialized;
 
+        [MaybeNull]
+        private LocaleAssetConfig _config;
+        private bool _initialized;
         /// <summary>
         /// The callback when the locale is changed.
         /// This callback will be called after changing locale so accessing <c cref="CurrentLocaleCode"/> will return the new locale code and calling <c cref="Tr">Tr</c> will return the localized string for the new locale.
         /// This callback will also be called when the localization is initialized since the locale is changed from 'null' to the first locale.
         /// </summary>
         public event Action<string> LocaleChanged;
-
+#if CSHARP_NULLABLE_SUPPORTED
+        [MaybeNull]
+        [DisallowNull]
+#endif
         public string CurrentLocaleCode
         {
-            [CanBeNull] get => _config?.CurrentLocaleCode;
-            [NotNull]
+#if !CSHARP_NULLABLE_SUPPORTED
+            [MaybeNull]
+#endif
+            get => _config?.CurrentLocaleCode;
+#if !CSHARP_NULLABLE_SUPPORTED
+            [DisallowNull]
+#endif
             set
             {
                 if (_config?.TrySetLocale(value) == false)
@@ -72,8 +92,8 @@ namespace CustomLocalization4EditorExtension
         /// <param name="defaultLocale">The fallback locale of localization.</param>
         /// <exception cref="ArgumentException">Both keyLocale and defaultLocale are null</exception>
         public Localization(
-            [NotNull] string localeAssetPath,
-            [NotNull] string defaultLocale)
+            [DisallowNull] string localeAssetPath,
+            [DisallowNull] string defaultLocale)
         {
             _inputAssetPath = localeAssetPath;
             _defaultLocaleName = defaultLocale;
@@ -92,9 +112,9 @@ namespace CustomLocalization4EditorExtension
         /// <param name="localeSettingEditorPrefsKey">The <see cref="EditorPrefs"/> key to store current locale</param>
         /// <exception cref="ArgumentException">Both keyLocale and defaultLocale are null</exception>
         public Localization(
-            [NotNull] string localeAssetPath,
-            [NotNull] string defaultLocale,
-            [NotNull] string localeSettingEditorPrefsKey)
+            [DisallowNull] string localeAssetPath,
+            [DisallowNull] string defaultLocale,
+            [DisallowNull] string localeSettingEditorPrefsKey)
         {
             _inputAssetPath = localeAssetPath;
             _defaultLocaleName = defaultLocale;
@@ -176,14 +196,22 @@ namespace CustomLocalization4EditorExtension
                 Debug.LogError($"locale duplicated: {e}");
             }
         }
-        
+
 #pragma warning disable CS0618 // Type or member is obsolete
+#if CSHARP_NULLABLE_SUPPORTED
+        [return: NotNull]
+#else
         [NotNull]
+#endif
         private static LocaleLocalization NewParsedLocalization(LocalizationAsset asset) =>
             NewParsedLocalization0(asset);
 
         [Obsolete("Error Remover")]
+#if CSHARP_NULLABLE_SUPPORTED
+        [return: NotNull]
+#else
         [NotNull]
+#endif
         private static LocaleLocalization NewParsedLocalization0(LocalizationAsset asset) =>
             new LocaleLocalization(asset);
 #pragma warning restore CS0618 // Type or member is obsolete
@@ -195,8 +223,12 @@ namespace CustomLocalization4EditorExtension
         /// The untranslated text. This should be english but can be changed via keyLocale of constructor.
         /// </param>
         /// <returns>The translated text or translation key</returns>
+#if CSHARP_NULLABLE_SUPPORTED
+        [return: NotNull]
+#else
         [NotNull]
-        public string Tr([NotNull] string key) => TryTr(key) ?? key;
+#endif
+        public string Tr([DisallowNull] string key) => TryTr(key) ?? key;
 
         /// <summary>
         /// Translate the specified text via this Localization setting
@@ -205,8 +237,12 @@ namespace CustomLocalization4EditorExtension
         /// The untranslated text. This should be english but can be changed via keyLocale of constructor.
         /// </param>
         /// <returns>The translated text or null</returns>
-        [CanBeNull]
-        public string TryTr([NotNull] string key)
+#if CSHARP_NULLABLE_SUPPORTED
+        [return: MaybeNull]
+#else
+        [MaybeNull]
+#endif
+        public string TryTr([DisallowNull] string key)
         {
             if (!_initialized)
                 Setup();
@@ -232,7 +268,7 @@ namespace CustomLocalization4EditorExtension
 
         #region utilities
 
-        private static bool IsGuid([NotNull] string mayGuid)
+        private static bool IsGuid([DisallowNull] string mayGuid)
         {
             int hexCnt = 0;
             foreach (var c in mayGuid)
@@ -258,9 +294,8 @@ namespace CustomLocalization4EditorExtension
             [NotNull] private readonly LocaleLocalization[] _locales;
             [NotNull] private readonly string _localeSettingEditorPrefsKey;
             [NotNull] private readonly string[] _localeNameList;
-            [CanBeNull] private readonly LocaleLocalization _defaultLocale;
-            internal event Action LocaleChanged;
-            
+            [MaybeNull] private readonly LocaleLocalization _defaultLocale;
+            internal event Action LocaleChanged;            
             [NotNull] private LocaleLocalization CurrentLocale {
                 get => _currentLocale;
                 set
@@ -276,10 +311,10 @@ namespace CustomLocalization4EditorExtension
 
             public readonly IReadOnlyDictionary<string, LocaleLocalization> ParsedByIsoCode;
 
-            public LocaleAssetConfig([NotNull] LocaleLocalization[] locales,
-                [NotNull] string defaultLocaleName,
-                [CanBeNull] string currentLocaleCode, 
-                [NotNull] string localeSettingEditorPrefsKey)
+            public LocaleAssetConfig([DisallowNull] LocaleLocalization[] locales,
+                [DisallowNull] string defaultLocaleName,
+                [AllowNull] string currentLocaleCode, 
+                [DisallowNull] string localeSettingEditorPrefsKey)
             {
                 if (locales.Length == 0)
                     throw new ArgumentException("empty", nameof(locales));
@@ -314,7 +349,7 @@ namespace CustomLocalization4EditorExtension
 
             public string CurrentLocaleCode => CurrentLocale.LocaleIsoCode;
 
-            public bool TrySetLocale(string localeCode)
+            public bool TrySetLocale([DisallowNull] string localeCode)
             {
                 if (!ParsedByIsoCode.TryGetValue(localeCode, out var locale)) return false;
 
@@ -349,7 +384,7 @@ namespace CustomLocalization4EditorExtension
         class LocalePickerAttribute : DecoratorDrawer
         {
             private bool _initialized;
-            [CanBeNull] private Localization _localization;
+            [MaybeNull] private Localization _localization;
 
             public override float GetHeight()
             {
@@ -385,7 +420,7 @@ namespace CustomLocalization4EditorExtension
         class LocalizedAttributeDrawer : InheritingDrawer<CL4EELocalizedAttribute>
         {
             private CL4EELocalizedAttribute _attribute;
-            [CanBeNull] private Localization _localization;
+            [MaybeNull] private Localization _localization;
             private string _localeCode;
             private GUIContent _label = new GUIContent();
 
@@ -629,7 +664,11 @@ namespace CustomLocalization4EditorExtension
             Name = TryGetLocalizedString($"locale:{asset.localeIsoCode}") ?? DefaultLocaleName(asset.localeIsoCode);
         }
 
-        [CanBeNull]
+#if CSHARP_NULLABLE_SUPPORTED
+        [return: MaybeNull]
+#else
+        [MaybeNull]
+#endif
         public string TryGetLocalizedString(string key)
         {
             string localized;
@@ -661,14 +700,26 @@ namespace CustomLocalization4EditorExtension
             new Dictionary<Assembly, Func<Localization>>();
 
         /// <returns>Localization instance for caller assembly</returns>
-        [CanBeNull]
+#if CSHARP_NULLABLE_SUPPORTED
+        [return: MaybeNull]
+#else
+        [MaybeNull]
+#endif
         public static Localization GetLocalization() => GetLocalization(Assembly.GetCallingAssembly());
 
-        [CanBeNull]
-        public static Localization GetLocalization([NotNull] Assembly assembly) => GetLocalizationGetter(assembly)();
+#if CSHARP_NULLABLE_SUPPORTED
+        [return: MaybeNull]
+#else
+        [MaybeNull]
+#endif
+        public static Localization GetLocalization([DisallowNull] Assembly assembly) => GetLocalizationGetter(assembly)();
 
+#if CSHARP_NULLABLE_SUPPORTED
+        [return: NotNull]
+#else
         [NotNull]
-        public static string Tr([NotNull] string localizationKey) =>
+#endif
+        public static string Tr([DisallowNull] string localizationKey) =>
             GetLocalization(Assembly.GetCallingAssembly())?.Tr(localizationKey) ?? localizationKey;
 
         public static void DrawLanguagePicker()
@@ -680,8 +731,12 @@ namespace CustomLocalization4EditorExtension
                 localization.DrawLanguagePicker();
         }
 
+#if CSHARP_NULLABLE_SUPPORTED
+        [return: NotNull]
+#else
         [NotNull]
-        private static Func<Localization> GetLocalizationGetter([NotNull] Assembly assembly)
+#endif
+        private static Func<Localization> GetLocalizationGetter([DisallowNull] Assembly assembly)
         {
             if (LocalizationGetter.TryGetValue(assembly, out var getter))
                 return getter;
@@ -765,7 +820,7 @@ namespace CustomLocalization4EditorExtension
     /// Specifies the Localization instance for that assembly.
     /// You can use specified instance using <see cref="CL4EE"/> class or Cl4EeLocalizedAttribute (to be implemented)
     /// </summary>
-    [MeansImplicitUse]
+    [JetBrains.Annotations.MeansImplicitUse]
     [AttributeUsage(AttributeTargets.Property)]
 #if COM_ANATAWA12_CUSTOM_LOCALIZATION_FOR_EDITOR_EXTENSION_AS_PACKAGE
     public
@@ -778,4 +833,4 @@ namespace CustomLocalization4EditorExtension
         
     }
 }
-#endif 
+#endif
