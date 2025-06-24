@@ -47,9 +47,10 @@ namespace CustomLocalization4EditorExtension
         /// This callback will also be called when the localization is initialized since the locale is changed from 'null' to the first locale.
         /// </summary>
         public event Action<string> LocaleChanged;
-
+#if CSHARP_NULLABLE_SUPPORTED
         [MaybeNull]
         [DisallowNull]
+#endif
         public string CurrentLocaleCode
         {
 #if !CSHARP_NULLABLE_SUPPORTED
