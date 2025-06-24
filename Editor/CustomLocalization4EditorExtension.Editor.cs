@@ -41,6 +41,13 @@ namespace CustomLocalization4EditorExtension
         [MaybeNull]
         private LocaleAssetConfig _config;
         private bool _initialized;
+        /// <summary>
+        /// The callback when the locale is changed.
+        /// This callback will be called after changing locale so accessing <c cref="CurrentLocaleCode"/> will return the new locale code and calling <c cref="Tr">Tr</c> will return the localized string for the new locale.
+        /// This callback will also be called when the localization is initialized since the locale is changed from 'null' to the first locale.
+        /// </summary>
+        public event Action<string> LocaleChanged;
+
         public string CurrentLocaleCode
         {
 #if CSHARP_NULLABLE_SUPPORTED
@@ -177,6 +184,9 @@ namespace CustomLocalization4EditorExtension
                 }
 
                 _config = new LocaleAssetConfig(locales, _defaultLocaleName, currentLocaleCode, _localeSettingEditorPrefsKey);
+                _config.LocaleChanged += () => LocaleChanged?.Invoke(_config.CurrentLocaleCode);
+                // invoke LocaleChanged since we (might) changed the locale from 'null' to the first locale
+                LocaleChanged?.Invoke(_config.CurrentLocaleCode);
             }
             catch (IOException e)
             {
@@ -286,7 +296,7 @@ namespace CustomLocalization4EditorExtension
             [NotNull] private readonly string _localeSettingEditorPrefsKey;
             [NotNull] private readonly string[] _localeNameList;
             [MaybeNull] private readonly LocaleLocalization _defaultLocale;
-            
+            internal event Action LocaleChanged;            
             [NotNull] private LocaleLocalization CurrentLocale {
                 get => _currentLocale;
                 set
@@ -347,6 +357,8 @@ namespace CustomLocalization4EditorExtension
                 EditorPrefs.SetString(_localeSettingEditorPrefsKey, localeCode);
 
                 CurrentLocale = locale;
+
+                LocaleChanged?.Invoke();
                 return true;
             }
 
@@ -357,6 +369,8 @@ namespace CustomLocalization4EditorExtension
 
                 CurrentLocale = _locales[newIndex];
                 EditorPrefs.SetString(_localeSettingEditorPrefsKey, CurrentLocale.LocaleIsoCode);
+
+                LocaleChanged?.Invoke();
             }
 
             public string TryGetLocalizedString(string key)
