@@ -33,7 +33,7 @@ namespace CustomLocalization4EditorExtension
         /// The callback when the locale is changed.
         /// This callback will be called after changing locale so accessing <c cref="CurrentLocaleCode"/> will return the new locale code and calling <c cref="Tr">Tr</c> will return the localized string for the new locale.
         /// </summary>
-        public event Action<string> OnLocaleChanged;
+        public event Action<string> LocaleChanged;
 
         public string CurrentLocaleCode
         {
@@ -162,7 +162,7 @@ namespace CustomLocalization4EditorExtension
                 }
 
                 _config = new LocaleAssetConfig(locales, _defaultLocaleName, currentLocaleCode, _localeSettingEditorPrefsKey);
-                _config.OnLocaleChanged += () => OnLocaleChanged?.Invoke(_config.CurrentLocaleCode);
+                _config.LocaleChanged += () => LocaleChanged?.Invoke(_config.CurrentLocaleCode);
             }
             catch (IOException e)
             {
@@ -256,7 +256,7 @@ namespace CustomLocalization4EditorExtension
             [NotNull] private readonly string _localeSettingEditorPrefsKey;
             [NotNull] private readonly string[] _localeNameList;
             [CanBeNull] private readonly LocaleLocalization _defaultLocale;
-            internal event Action OnLocaleChanged;
+            internal event Action LocaleChanged;
             
             [NotNull] private LocaleLocalization CurrentLocale {
                 get => _currentLocale;
@@ -319,7 +319,7 @@ namespace CustomLocalization4EditorExtension
 
                 CurrentLocale = locale;
 
-                OnLocaleChanged?.Invoke();
+                LocaleChanged?.Invoke();
                 return true;
             }
 
@@ -331,7 +331,7 @@ namespace CustomLocalization4EditorExtension
                 CurrentLocale = _locales[newIndex];
                 EditorPrefs.SetString(_localeSettingEditorPrefsKey, CurrentLocale.LocaleIsoCode);
 
-                OnLocaleChanged?.Invoke();
+                LocaleChanged?.Invoke();
             }
 
             public string TryGetLocalizedString(string key)
