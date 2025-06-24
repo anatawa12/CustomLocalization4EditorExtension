@@ -48,18 +48,16 @@ namespace CustomLocalization4EditorExtension
         /// </summary>
         public event Action<string> LocaleChanged;
 
+        [MaybeNull]
+        [DisallowNull]
         public string CurrentLocaleCode
         {
-#if CSHARP_NULLABLE_SUPPORTED
-            [return: MaybeNull]
-#else
+#if !CSHARP_NULLABLE_SUPPORTED
             [MaybeNull]
 #endif
             get => _config?.CurrentLocaleCode;
-#if CSHARP_NULLABLE_SUPPORTED
-            [return: NotNull]
-#else
-            [NotNull]
+#if !CSHARP_NULLABLE_SUPPORTED
+            [DisallowNull]
 #endif
             set
             {
