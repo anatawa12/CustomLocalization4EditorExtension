@@ -20,6 +20,7 @@ using NotNullAttribute = JetBrains.Annotations.NotNullAttribute;
 #endif
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 namespace CustomLocalization4EditorExtension
 {
@@ -264,6 +265,20 @@ namespace CustomLocalization4EditorExtension
             _config.DrawLanguagePicker(rect);
         }
 
+        public bool TryMountLanguagePicker([DisallowNull] DropdownField languagePicker)
+        {
+            if (_config == null)
+            {
+                return false;
+            }
+            else
+            {
+                _config.MountLanguagePicker(languagePicker);
+
+                return true;
+            }
+        }
+
         public float GetDrawLanguagePickerHeight() => LanguagePickerHeight;
 
         #region utilities
@@ -370,6 +385,19 @@ namespace CustomLocalization4EditorExtension
                 EditorPrefs.SetString(_localeSettingEditorPrefsKey, CurrentLocale.LocaleIsoCode);
 
                 LocaleChanged?.Invoke();
+            }
+
+            public void MountLanguagePicker(DropdownField languagePicker)
+            {
+                languagePicker.choices = _locales.Select(x => x.LocaleIsoCode).ToList();
+                languagePicker.index = _currentLocaleIndex;
+                Func<string, string> localeCodeToName = localeCode => ParsedByIsoCode[localeCode].Name;
+                languagePicker.formatListItemCallback = localeCodeToName;
+                languagePicker.formatSelectedValueCallback = localeCodeToName;
+                languagePicker.RegisterValueChangedCallback(changedEvent => CurrentLocale = ParsedByIsoCode[changedEvent.newValue]);
+                Action onLocaleChanged = () => languagePicker.value = CurrentLocale.LocaleIsoCode;
+                LocaleChanged += onLocaleChanged;
+                languagePicker.RegisterCallback<DetachFromPanelEvent>(detachEvent => LocaleChanged -= onLocaleChanged);
             }
 
             public string TryGetLocalizedString(string key)
@@ -729,6 +757,13 @@ namespace CustomLocalization4EditorExtension
                 EditorGUILayout.LabelField("ERROR", "CL4EE Localization Instance Not Found");
             else
                 localization.DrawLanguagePicker();
+        }
+
+        public static bool TryMountLanguagePicker([DisallowNull] DropdownField languagePicker)
+        {
+            var localization = GetLocalization(Assembly.GetCallingAssembly());
+            if (localization == null) return false;
+            return localization.TryMountLanguagePicker(languagePicker);
         }
 
 #if CSHARP_NULLABLE_SUPPORTED
