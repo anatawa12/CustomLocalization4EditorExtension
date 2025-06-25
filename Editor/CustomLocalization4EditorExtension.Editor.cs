@@ -427,7 +427,7 @@ namespace CustomLocalization4EditorExtension
                 Initialize();
                 if(_localization is not null)
                 {
-                    DropdownField languagePicker = new DropdownField();
+                    DropdownField languagePicker = new DropdownField("Language");
                     _localization.MountLanguagePicker(languagePicker);
                     return languagePicker;
                 }
