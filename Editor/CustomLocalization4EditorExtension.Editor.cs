@@ -265,17 +265,17 @@ namespace CustomLocalization4EditorExtension
             _config.DrawLanguagePicker(rect);
         }
 
-        public bool TryMountLanguagePicker([DisallowNull] DropdownField languagePicker)
+        public void MountLanguagePicker([DisallowNull] DropdownField languagePicker)
         {
             if (_config == null)
             {
-                return false;
+                languagePicker.choices = new();
+                languagePicker.value = "No Locale Available";
+                languagePicker.SetEnabled(false);
             }
             else
             {
                 _config.MountLanguagePicker(languagePicker);
-
-                return true;
             }
         }
 
@@ -419,6 +419,22 @@ namespace CustomLocalization4EditorExtension
                 Initialize();
                 return (_localization?.GetDrawLanguagePickerHeight() ?? EditorGUIUtility.singleLineHeight)
                        + EditorGUIUtility.standardVerticalSpacing;
+            }
+
+
+            public override VisualElement CreatePropertyGUI()
+            {
+                Initialize();
+                if(_localization is not null)
+                {
+                    DropdownField languagePicker = new DropdownField();
+                    _localization.MountLanguagePicker(languagePicker);
+                    return languagePicker;
+                }
+                else
+                {
+                    return new Label("ERROR: CL4EE Localization Instance Not Found");
+                }
             }
 
             public override void OnGUI(Rect position)
@@ -759,11 +775,17 @@ namespace CustomLocalization4EditorExtension
                 localization.DrawLanguagePicker();
         }
 
-        public static bool TryMountLanguagePicker([DisallowNull] DropdownField languagePicker)
+        public static void MountLanguagePicker([DisallowNull] DropdownField languagePicker)
         {
             var localization = GetLocalization(Assembly.GetCallingAssembly());
-            if (localization == null) return false;
-            return localization.TryMountLanguagePicker(languagePicker);
+            if (localization == null)
+            {
+                languagePicker.choices = new();
+                languagePicker.value = "ERROR: CL4EE Localization Instance Not Found";
+                languagePicker.SetEnabled(false);
+                return;
+            }
+            localization.MountLanguagePicker(languagePicker);
         }
 
 #if CSHARP_NULLABLE_SUPPORTED
