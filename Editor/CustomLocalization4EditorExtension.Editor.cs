@@ -354,7 +354,10 @@ namespace CustomLocalization4EditorExtension
                 if (!ParsedByIsoCode.TryGetValue(localeCode, out var locale)) return false;
 
                 EditorPrefs.SetString(_localeSettingEditorPrefsKey, localeCode);
-
+                if(CurrentLocale == locale)
+                {
+                    return true;
+                }
                 CurrentLocale = locale;
 
                 LocaleChanged?.Invoke();
