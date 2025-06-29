@@ -10,6 +10,16 @@ namespace CustomLocalization4EditorExtension.Tests
         // edbcfdff07c34ee99997772283a113bf: Resources/General
         private const string GeneralResourceDirGuid = "edbcfdff07c34ee99997772283a113bf";
 
+        [SetUp]
+        public void CleanupLocaleSettings()
+        {
+            // Cleanup EditorPrefs and ensure no leftover settings from previous tests
+            EditorPrefs.DeleteKey($"com.anatawa12.custom-localization-for-editor-extension.locale.{GeneralResourceDirGuid}");
+            EditorPrefs.DeleteKey("com.anatawa12.custom-localization-for-editor-extension.locale.71cb5e55a5c54e23bda12c109bf83952");
+            EditorPrefs.DeleteKey($"com.anatawa12.custom-localization-for-editor-extension.locale.{GetTestsDirPath()}/Resources/General/");
+            EditorPrefs.DeleteKey($"com.anatawa12.custom-localization-for-editor-extension.locale.{GetTestsDirPath()}/Resources/General/en.po");
+        }
+
         private void AccessTest(string path)
         {
             var locale = new Localization(path, "en");
