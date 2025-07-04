@@ -4,14 +4,15 @@ using UnityEngine;
 
 namespace CustomLocalization4EditorExtension.Sample.EditorOnly
 {
-    public class RuntimeOnlyTestComponent : MonoBehaviour
+    [AddComponentMenu("CL4EE Samples/Runtime Only Second Sample Component")]
+    public class CL4EERuntimeOnlSecondSampleComponent : MonoBehaviour
     {
-#if UNITY_EDITOR
-        [AssemblyCL4EELocalization]
-        private static Localization Localization { get; } = new Localization("17afd332a3d34cb29749601c70977f1e", "en");
-#endif
+        // Since AssemblyCL4EELocalization is defined in the first component,
+        // you should not define it again in this class.
+        
+        // You still can use CL4EELocalePicker and CL4EELocalized attributes in this class normaly.
 
-        [CL4EELocalePicker(typeof(RuntimeOnlyTestComponent))]
+        [CL4EELocalePicker(typeof(CL4EERuntimeOnlyFirstSampleComponent))]
         [CL4EELocalized("prop:testField")]
         public string testField;
 
@@ -27,6 +28,7 @@ namespace CustomLocalization4EditorExtension.Sample.EditorOnly
         [Serializable]
         public class SomeStruct
         {
+            // Also, you can use CL4EELocalized attribute for fields in a struct.
             [CL4EELocalized("prop:inStruct")]
             public string inStruct;
 

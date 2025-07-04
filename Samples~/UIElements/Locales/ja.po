@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Language: ja\n"
 
-msgid "error"
-msgstr "不明なエラーが発生しました"
+msgid "some label"
+msgstr "翻訳されるラベル"
 
 msgid "locale:ja"
 msgstr "日本語"

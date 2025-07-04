@@ -2,8 +2,8 @@ msgid ""
 msgstr ""
 "Language: en\n"
 
-msgid "error"
-msgstr "Unknown system error"
+msgid "some label"
+msgstr "Some Localized Label"
 
 msgid "locale:en"
 msgstr "English"
