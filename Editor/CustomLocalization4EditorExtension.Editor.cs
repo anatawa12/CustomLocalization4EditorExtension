@@ -268,6 +268,7 @@ namespace CustomLocalization4EditorExtension
             _config.DrawLanguagePicker(rect);
         }
 
+#if UNITY_2021_2_OR_NEWER
         public void MountLanguagePicker([DisallowNull] DropdownField languagePicker)
         {
             if (!_initialized)
@@ -275,7 +276,7 @@ namespace CustomLocalization4EditorExtension
 
             if (_config == null)
             {
-                languagePicker.choices = new();
+                languagePicker.choices = new List<string>();
                 languagePicker.value = "No Locale Available";
                 languagePicker.SetEnabled(false);
             }
@@ -284,6 +285,7 @@ namespace CustomLocalization4EditorExtension
                 _config.MountLanguagePicker(languagePicker);
             }
         }
+#endif
 
         public float GetDrawLanguagePickerHeight() => LanguagePickerHeight;
 
@@ -396,6 +398,7 @@ namespace CustomLocalization4EditorExtension
                 LocaleChanged?.Invoke();
             }
 
+#if UNITY_2021_2_OR_NEWER
             public void MountLanguagePicker(DropdownField languagePicker)
             {
                 languagePicker.choices = _locales.Select(x => x.LocaleIsoCode).ToList();
@@ -408,6 +411,7 @@ namespace CustomLocalization4EditorExtension
                 LocaleChanged += onLocaleChanged;
                 languagePicker.RegisterCallback<DetachFromPanelEvent>(detachEvent => LocaleChanged -= onLocaleChanged);
             }
+#endif
 
             public string TryGetLocalizedString(string key)
             {
@@ -431,6 +435,7 @@ namespace CustomLocalization4EditorExtension
             }
 
 
+#if UNITY_2022_2_OR_NEWER
             public override VisualElement CreatePropertyGUI()
             {
                 Initialize();
@@ -445,6 +450,7 @@ namespace CustomLocalization4EditorExtension
                     return new Label("ERROR: CL4EE Localization Instance Not Found");
                 }
             }
+#endif
 
             public override void OnGUI(Rect position)
             {
@@ -784,6 +790,7 @@ namespace CustomLocalization4EditorExtension
                 localization.DrawLanguagePicker();
         }
 
+#if UNITY_2021_2_OR_NEWER
         public static void MountLanguagePicker([DisallowNull] DropdownField languagePicker)
         {
             var localization = GetLocalization(Assembly.GetCallingAssembly());
@@ -796,6 +803,7 @@ namespace CustomLocalization4EditorExtension
             }
             localization.MountLanguagePicker(languagePicker);
         }
+#endif
 
 #if CSHARP_NULLABLE_SUPPORTED
         [return: NotNull]
