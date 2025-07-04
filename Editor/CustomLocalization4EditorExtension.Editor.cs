@@ -256,6 +256,9 @@ namespace CustomLocalization4EditorExtension
 
         public void DrawLanguagePicker(Rect rect)
         {
+            if (!_initialized)
+                Setup();
+
             if (_config == null)
             {
                 EditorGUI.Popup(rect, 0, new[] { "No Locale Available" });
@@ -267,6 +270,9 @@ namespace CustomLocalization4EditorExtension
 
         public void MountLanguagePicker([DisallowNull] DropdownField languagePicker)
         {
+            if (!_initialized)
+                Setup();
+
             if (_config == null)
             {
                 languagePicker.choices = new();
