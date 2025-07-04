@@ -13,19 +13,19 @@
   "repo": "https://vpm.anatawa12.com/vpm.json",
   "samples": [
     {
-      "displayName": "Legacy API Usage",
-      "description": "Contains simple ui with localizable with Legacy API",
-      "path": "Samples~/Legacy"
-    },
-    {
       "displayName": "Editor Only sample",
-      "description": "Contains simple EditorWindow with EditorGUILayout",
+      "description": "Contains simple EditorWindow with CL4EE",
       "path": "Samples~/EditorOnly"
     },
     {
       "displayName": "Runtime Only sample",
       "description": "Contains simple MonoBehavior with CL4EE localization attributes.",
       "path": "Samples~/EditorOnly"
+    },
+    {
+      "displayName": "UIElements sample",
+      "description": "Contains simple EditorWindow with CL4EE and UIElements",
+      "path": "Samples~/UIElements"
     }
   ]
 }
