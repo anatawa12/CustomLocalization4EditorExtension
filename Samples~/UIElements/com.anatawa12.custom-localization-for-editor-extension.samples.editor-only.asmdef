@@ -1,5 +1,5 @@
 {
-    "name": "com.anatawa12.custom-localization-for-editor-extension.samples.legacy",
+    "name": "com.anatawa12.custom-localization-for-editor-extension.samples.ui-elements",
     "references": [
         "com.anatawa12.custom-localization-for-editor-extension"
     ],
