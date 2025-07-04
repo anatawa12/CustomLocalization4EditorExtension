@@ -1,5 +1,6 @@
 {
     "name": "com.anatawa12.custom-localization-for-editor-extension.tests",
+    "rootNamespace": "",
     "references": [
         "GUID:0acc523941302664db1f4e527237feb3",
         "GUID:27619889b8ba8c24980f49ee34dbb44a",
@@ -16,8 +17,15 @@
     ],
     "autoReferenced": false,
     "defineConstraints": [
-        "UNITY_INCLUDE_TESTS"
+        "UNITY_INCLUDE_TESTS",
+        "UNITY_TEST_FRAMEWORK"
     ],
-    "versionDefines": [],
+    "versionDefines": [
+        {
+            "name": "com.unity.test-framework",
+            "expression": "",
+            "define": "UNITY_TEST_FRAMEWORK"
+        }
+    ],
     "noEngineReferences": false
 }
